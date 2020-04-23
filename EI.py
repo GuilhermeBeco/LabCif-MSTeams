@@ -167,7 +167,23 @@ def filtro(buffer):
                 if "<div><div><div>".encode("utf-16le") in line.encode("utf-8"):
                     st = utf16customdecoder(line, "<div><div><div>")
                     if "https://statics.teams.cdn.office.net/evergreen-assets/skype/v2/" in st:
-                        print("Encontrei o emoji!!!!!!!!!!!!!")
+                        indexSpan = st.find("<span")
+                        indexSpanfinal = st.find("</span>")
+                        indexSpanfinal += 7
+                        l = list(st)
+                        span = ""
+                        emoji = ""
+                        for x in range(indexSpan, indexSpanfinal):
+                            span = span + l[x]
+                        #     t y p e = " ( y e s ) "
+                        st = st.replace(span, "")
+                        indexEmoji = span.find("type=\"(")
+                        indexEmojiFinal = span.find("\"><img")
+                        indexEmoji += 7
+                        spanList = list(span)
+                        for x in range(indexEmoji,indexEmojiFinal-1):
+                            emoji+=spanList[x]
+                        print(emoji)
                         print(st)
                 if "http://schema.skype.com/Mention" in line:
                     # Não pronto para multiplas mentions
