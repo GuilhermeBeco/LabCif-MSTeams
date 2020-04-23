@@ -24,6 +24,12 @@ def find(pt, path):
     return fls
 
 
+def acentuar(acentos, st):
+    for hexa, acento in acentos.items():
+        st = st.replace(hexa, acento)
+    return st
+
+
 def decoder(string, pattern):
     s = string.encode("utf-8").find(pattern.encode("utf-16le"))
     l = string[s - 1:]
@@ -52,6 +58,13 @@ def multiFind(text):
         index += 8  # +6 because len('feff00') == 2
         f = ""
     return acentos
+
+
+def utf16customdecoder(string, pattern):
+    st = decoder(string, pattern)
+    acentos = multiFind(st)
+    st = acentuar(acentos, st)
+    return st
 
 
 def testeldb(path):
@@ -152,11 +165,7 @@ def filtro(buffer):
 
             if "RichText/Html" in line:
                 if "<div><div><div>".encode("utf-16le") in line.encode("utf-8"):
-                    st = decoder(line, "<div><div><div>")
-                    acentos = multiFind(st)
-                    for hexa, acento in acentos.items():
-                        st = st.replace(hexa, acento)
-                    # print(st)
+                    st = utf16customdecoder(line, "<div><div><div>")
                     if "https://statics.teams.cdn.office.net/evergreen-assets/skype/v2/" in st:
                         print("Encontrei o emoji!!!!!!!!!!!!!")
                         print(st)
@@ -199,7 +208,6 @@ def filtro(buffer):
                 indexKeyFinal = line.find("user")
                 indexKeyFinal -= 2
                 l = list(line)
-                # print(line)
                 for x in range(indexKey, indexKeyFinal):
                     name = name + l[x]
                 if name != "":
@@ -347,6 +355,6 @@ def geraContactos():
 
 
 if __name__ == "__main__":
-    crialogtotal()
+    # crialogtotal()
     findpadrao()
     geraContactos()
