@@ -11,6 +11,7 @@ projetoEIAppDataPath = appdata + "\\ProjetoEI\\"
 logFinal = open(os.path.join(projetoEIAppDataPath, "logTotal.txt"), "a+", encoding="utf-8")
 logMsgs = open(os.path.join(projetoEIAppDataPath, "logMsgs.txt"), "a+", encoding="utf-8")
 logCall = open(os.path.join(projetoEIAppDataPath, "logCalls.txt"), "a+", encoding="utf-8")
+linkEmoji = "https://statics.teams.cdn.office.net/evergreen-assets/skype/v2/{0}/50.png"
 arrayMensagens = []
 arrayContactos = []
 
@@ -116,6 +117,9 @@ def filtro(buffer):
     time = ""
     name = ""
     isEmoji = False
+    isRichHtml = False
+    isRichHtmlDone = False
+    richHtml = ""
     isReaction = False
     reaction = Reaction()
     emojiReaction = ""
@@ -163,7 +167,15 @@ def filtro(buffer):
                 time = name
                 nAspas = False
 
-            if "RichText/Html" in line:
+            if "renderContent" in line:
+                isRichHtml = False
+                isRichHtmlDone = True
+
+            if isRichHtml:
+                richHtml += line
+
+            if isRichHtmlDone:
+                print(richHtml)
                 if "<div><div><div>".encode("utf-16le") in line.encode("utf-8"):
                     st = utf16customdecoder(line, "<div><div><div>")
                     if "https://statics.teams.cdn.office.net/evergreen-assets/skype/v2/" in st:
@@ -175,16 +187,16 @@ def filtro(buffer):
                         emoji = ""
                         for x in range(indexSpan, indexSpanfinal):
                             span = span + l[x]
-                        #     t y p e = " ( y e s ) "
                         st = st.replace(span, "")
                         indexEmoji = span.find("type=\"(")
-                        indexEmojiFinal = span.find("\"><img")
+                        indexEmojiFinal = span.find("\" contenteditable")
                         indexEmoji += 7
                         spanList = list(span)
-                        for x in range(indexEmoji,indexEmojiFinal-1):
-                            emoji+=spanList[x]
-                        print(emoji)
-                        print(st)
+                        for x in range(indexEmoji, indexEmojiFinal - 1):
+                            emoji += spanList[x]
+                        # print(emoji)
+                        # print(linkEmoji.format(emoji))
+                        # print(st)
                 if "http://schema.skype.com/Mention" in line:
                     # Não pronto para multiplas mentions
                     isMention = True
@@ -200,7 +212,6 @@ def filtro(buffer):
                     mention = name
                     name = ""
                     # as reações estão no meio..
-                    # pesquisar por ""
                 else:
                     isMention = False
                     indexTexto = line.find("<div>")
@@ -211,8 +222,14 @@ def filtro(buffer):
                     name = name + l[x]
                 message = name
                 nAspas = False
-            name = ""
-            logMsgs.write(line)
+                name = ""
+                logMsgs.write(line)
+                isRichHtmlDone = False
+
+
+            if "RichText/Html" in line:
+                isRichHtml = True
+                richHtml += line
 
             if "mri" in line and "orgid" in line and ("creatorProfile" not in line and "mention" not in line):
                 indexOrgid = line.find("orgid")
@@ -371,6 +388,6 @@ def geraContactos():
 
 
 if __name__ == "__main__":
-    # crialogtotal()
+    crialogtotal()
     findpadrao()
     geraContactos()
