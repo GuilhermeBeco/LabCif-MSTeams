@@ -20,11 +20,11 @@ class MensagemCompleta:
         self.reactions = []
 
     def toString(self):
-        return "Message: {0} || Time: {1} || Sender: {2} || IsMention: {3} || Mention: {4}".format(self.message,
+        return "Message: {0} || Time: {1} || Sender: {2} || IsMention: {3} || Mention: {4} || HasEmoji: {5}".format(self.message,
                                                                                                    self.time,
                                                                                                    self.sender,
                                                                                                    str(self.isMention),
-                                                                                                   self.mention)
+                                                                                                   self.mention,str(self.hasEmoji))
 
 
 class Contacto:

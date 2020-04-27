@@ -115,6 +115,8 @@ def filtro(buffer):
     }
     sender = ""
     time = ""
+    indexTexto = 0
+    indexTextoFinal = 0
     name = ""
     isEmoji = False
     isRichHtml = False
@@ -142,6 +144,7 @@ def filtro(buffer):
         isMention = False
         mention = ""
         for line in buffer:
+            logMsgs.write(line)
             name = ""
             if "imdisplayname" in line:
                 indexTexto = line.find("imdisplayname")
@@ -167,6 +170,10 @@ def filtro(buffer):
                 time = name
                 nAspas = False
 
+            if "RichText/Html" in line:
+                isRichHtml = True
+                richHtml += line
+
             if "renderContent" in line:
                 isRichHtml = False
                 isRichHtmlDone = True
@@ -175,61 +182,74 @@ def filtro(buffer):
                 richHtml += line
 
             if isRichHtmlDone:
-                print(richHtml)
-                if "<div><div><div>".encode("utf-16le") in line.encode("utf-8"):
-                    st = utf16customdecoder(line, "<div><div><div>")
+                if "<div>".encode("utf-16le") in line.encode("utf-8"):
+                    st = utf16customdecoder(richHtml, "<div>")
+                    richHtml = st
                     if "https://statics.teams.cdn.office.net/evergreen-assets/skype/v2/" in st:
-                        indexSpan = st.find("<span")
-                        indexSpanfinal = st.find("</span>")
-                        indexSpanfinal += 7
-                        l = list(st)
+                        # Não pronto para multiplos emojis
+                        indexMultiplosEmojis = 0
+                        indexSpan = 0
+                        while indexSpan != -1:
+
+                            indexSpan = st.find("<span class=\"animated-emoticon", indexMultiplosEmojis)
+                            indexMultiplosEmojis = indexSpan
+                            indexSpanfinal = st.find("</span>", indexSpan)
+                            indexSpanfinal += 7
+                            l = list(st)
+                            span = ""
+                            emoji = ""
+                            for x in range(indexSpan, indexSpanfinal):
+                                span = span + l[x]
+
+                            indexEmoji = span.find("itemid=\"")
+                            indexEmojiFinal = span.find(" itemscope")
+                            indexEmoji += 7
+                            spanList = list(span)
+                            for x in range(indexEmoji + 1, indexEmojiFinal - 1):
+                                emoji += spanList[x]
+                            st = st.replace(span, " " + linkEmoji.format(emoji) + " ")
+                            st = st.replace(r"\n", "")
+                            richHtml = st
+                if "http://schema.skype.com/Mention" in richHtml:
+                    indexMencionado = 0
+                    span = ""
+                    while indexMencionado != -1:
+                        isMention = True
+                        indexMencionado = richHtml.find("<span itemscope itemtype=\"http://schema.skype.com/Mention\"",
+                                                        indexMencionado)
+                        indexMencionadoFinal = richHtml.find("</span>", indexMencionado)
+                        l = list(richHtml)
+                        for x in range(indexMencionado, indexMencionadoFinal):
+                            span += l[x]
+
+                        indexSpanMention = span.find("itemid") + 11
+                        s = list(span)
+                        for x in range(indexSpanMention, len(s)):
+                            name += s[x]
+
+                        richHtml = richHtml.replace(span + "</span>", "Mention: {0}".format(name))
+
                         span = ""
-                        emoji = ""
-                        for x in range(indexSpan, indexSpanfinal):
-                            span = span + l[x]
-                        st = st.replace(span, "")
-                        indexEmoji = span.find("type=\"(")
-                        indexEmojiFinal = span.find("\" contenteditable")
-                        indexEmoji += 7
-                        spanList = list(span)
-                        for x in range(indexEmoji, indexEmojiFinal - 1):
-                            emoji += spanList[x]
-                        # print(emoji)
-                        # print(linkEmoji.format(emoji))
-                        # print(st)
-                if "http://schema.skype.com/Mention" in line:
-                    # Não pronto para multiplas mentions
-                    isMention = True
-                    indexMencionado = line.find("itemid=\"0\">")
-                    indexMencionado = indexMencionado + 11
-                    indexMencionadoFinal = line.find("</span>")
-                    indexTextoFinal = line.find("</div>")
-                    indexTexto = indexMencionadoFinal + 7
-                    l = list(line)
-                    for x in range(indexMencionado, indexMencionadoFinal):
-                        name = name + l[x]
-                    name = name.replace("\"0\">", " ")
-                    mention = name
-                    name = ""
-                    # as reações estão no meio..
-                else:
-                    isMention = False
-                    indexTexto = line.find("<div>")
-                    indexTexto += 5
-                    indexTextoFinal = line.find("</div>")
-                l = list(line)
+                        mention = name
+                        name = ""
+
+                indexTexto = richHtml.find("<div")
+                indexTexto += 5
+                indexTextoFinal = richHtml.find("</div>")
+                l = list(richHtml)
                 for x in range(indexTexto, indexTextoFinal):
                     name = name + l[x]
+                name = name.replace("<div>", "")
                 message = name
+                # if message.find(
+                #         "https://statics.teams.cdn.office.net/evergreen-assets/skype/v2/") != -1 or message.find(
+                #     "Mention: ") != -1:
+                #     print(message)
+                #     print("---------------")
                 nAspas = False
                 name = ""
-                logMsgs.write(line)
+
                 isRichHtmlDone = False
-
-
-            if "RichText/Html" in line:
-                isRichHtml = True
-                richHtml += line
 
             if "mri" in line and "orgid" in line and ("creatorProfile" not in line and "mention" not in line):
                 indexOrgid = line.find("orgid")
@@ -260,6 +280,7 @@ def filtro(buffer):
                 reactions.append(reaction)
 
         logMsgs.write("-------------------------------------------------------------------------------\n")
+        isEmoji = False
         # for r in reactions:
         #     print(r.toString())
         # print("--------------------------------------------------------------------------------")
@@ -272,6 +293,8 @@ def filtro(buffer):
         mensagem.sender = sender
         if isReaction:
             mensagem.reactions = reactions
+        if isEmoji:
+            mensagem.hasEmoji = True
         arrayMensagens.append(mensagem)
 
 
@@ -313,9 +336,8 @@ def findpadrao():
             filtro(buffer)
             buffer.clear()
     logFinalRead.close()
-    # for m in arrayMensagens:
-    #     print(m.toString())
-
+    for m in arrayMensagens:
+        print(m.toString())
     logFinalRead = open(os.path.join(projetoEIAppDataPath, "logTotal.txt"), "r", encoding="utf-8")
     while line := logFinalRead.readline():
 
