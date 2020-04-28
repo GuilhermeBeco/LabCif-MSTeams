@@ -143,6 +143,9 @@ def filtro(buffer):
         logMsgs.write("-------------------------------------------------------------------------------\n")
         isMention = False
         mention = ""
+        orgid = ""
+        nome = ""
+        existe = False
         for line in buffer:
             logMsgs.write(line)
             name = ""
@@ -159,7 +162,18 @@ def filtro(buffer):
                 name = name.replace("\"", "")
                 sender = name
                 nAspas = False
+                nome = sender
             name = ""
+
+            if "creator" in line:
+                indexOrgid = line.find("creator\",8:orgid:")
+                indexOrgid += 17
+                indexOrgidFinal = line.find("\"", indexOrgid)
+                l = list(line)
+                org = ""
+                for x in range(indexOrgid, indexOrgidFinal):
+                    org += l[x]
+                orgid = org
 
             if "composetime" in line:
                 indexTextoFinal = line.find("type")
@@ -296,6 +310,14 @@ def filtro(buffer):
         if isEmoji:
             mensagem.hasEmoji = True
         arrayMensagens.append(mensagem)
+        contacto = Contacto(nome, "sem email", orgid)
+
+        for c in arrayContactos:
+            if c.orgid == contacto.orgid:
+                existe = True
+        if not existe and contacto.orgid.find("Storage") == -1 and contacto.orgid.find("-") != -1:
+            print("added")
+            arrayContactos.append(contacto)
 
 
 def filtroReverso(buffer):
@@ -336,8 +358,8 @@ def findpadrao():
             filtro(buffer)
             buffer.clear()
     logFinalRead.close()
-    for m in arrayMensagens:
-        print(m.toString())
+    # for m in arrayMensagens:
+    #     print(m.toString())
     logFinalRead = open(os.path.join(projetoEIAppDataPath, "logTotal.txt"), "r", encoding="utf-8")
     while line := logFinalRead.readline():
 
@@ -411,5 +433,8 @@ def geraContactos():
 
 if __name__ == "__main__":
     crialogtotal()
-    findpadrao()
     geraContactos()
+    findpadrao()
+
+    for c in arrayContactos:
+        print(c.toString())
