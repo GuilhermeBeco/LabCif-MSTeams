@@ -109,6 +109,7 @@ def writelog(path):
 
 def crialogtotal():
     # os.system(r'cmd /c "LDBReader\PrjTeam.exe"')
+    os.system(r'cmd /c "LevelDBReader\eiTeste.exe {0}"'.format(levelDBPath))
     testeldb(levelDBPathLost)
     logLost = find(".log", levelDBPathLost)
     writelog(os.path.join(projetoEIAppDataPath, "logIndexedDB.txt"))
@@ -217,14 +218,14 @@ def criarObjetosDeEventCalls():
             callduration = ""
 
             indexcallduration = line.find("<duration>")
-            indexcalldurationfinal = line.find("</duration>")
+            indexcalldurationfinal = line.find("</duration>",indexcallduration)
 
             lista = list(line)
             for i in range(indexcallduration + 10, indexcalldurationfinal):
                 callduration = callduration + lista[i]
 
             callduration = str("{:.1f}".format(int(callduration) / 60))
-
+            # testar se está certo pois houve erro e tive de acrescentar o indexcallduration no find
             # ir buscar todos os nomes dos participantes
             participantstag = [m.start() for m in re.finditer('<displayName>', line)]
             participantsendtag = [m.start() for m in re.finditer('</displayName>', line)]
@@ -876,7 +877,7 @@ def filtro(buffer):
         reacaoChunk = ""
 
         logMsgs.write("-------------------------------------------------------------------------------\n")
-        print(message != "" and files.__len__() != 0)
+
         if message != "" or hasFiles:
             if "Call Log for Call" not in message:
                 mensagem = MensagemCompleta()
@@ -886,7 +887,7 @@ def filtro(buffer):
                 mensagem.message = message
                 mensagem.time = time
                 mensagem.sender = sender
-                print(cvId)
+
                 mensagem.cvID = cvId
                 mensagem.reactions = arrayReacoes
                 arrayReacoes.clear()
