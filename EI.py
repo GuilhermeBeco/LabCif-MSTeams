@@ -110,7 +110,7 @@ def writelog(path):
 
 def crialogtotal():
     # os.system(r'cmd /c "LDBReader\PrjTeam.exe"')
-    os.system(r'cmd /c "LevelDBReader\eiTeste.exe {0}"'.format(levelDBPath))
+    os.system('cmd /c "LevelDBReader\eiTeste.exe \"{0}\""'.format(levelDBPath))
     testeldb(levelDBPathLost)
     logLost = find(".log", levelDBPathLost)
     writelog(os.path.join(projetoEIAppDataPath, "logIndexedDB.txt"))
@@ -593,12 +593,22 @@ def filtro(buffer):
                 orgid = org
 
             if "composetime" in line:
-                indexTextoFinal = line.find("type")
+                indexTempo = line.find("originalarrivaltime")
+                indexTempoFinal = line.find("clientArrivalTime",indexTempo)
+
                 l = list(line)
-                for x in range(0, indexTextoFinal - 1):
+                for x in range(indexTempo+21,indexTempoFinal-2):
                     name = name + l[x]
                 name = name.replace("\"", "")
-                time = name
+
+                try:
+                    dtStart = zulu.parse(name)
+                    time = datetime.utcfromtimestamp(dtStart.timestamp())
+                    time = time.astimezone(tz=tz.tzlocal())
+                    time = name
+                except:
+                    time = "sem tempo"
+
                 nAspas = False
 
             if "RichText/Html" in line:
@@ -1111,7 +1121,7 @@ if __name__ == "__main__":
     pathUsers = ""
     pathAppdata = ""
     try:
-        opts, args = getopt.getopt(args, "hua:", ["users=", "appdata="])
+        opts, args = getopt.getopt(args, "hua:", ["users=", "autopsy="])
     except getopt.GetoptError:
         print('ei.py -u <pathToUsers> ')
         print("or")
@@ -1125,8 +1135,8 @@ if __name__ == "__main__":
             sys.exit()
         elif opt in ("-u", "--users"):
             pathUsers = arg
-        elif opt in ("-a", "--appdata"):
-            levelDBPath = projetoEIAppDataPath + "\\"+arg
+        elif opt in ("-a", "--autopsy"):
+            levelDBPath = projetoEIAppDataPath + "\\" + arg
             print("-a")
 
     crialogtotal()
