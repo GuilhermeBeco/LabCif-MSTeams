@@ -6,6 +6,7 @@ from pathlib import Path
 
 import zulu as zulu
 from dateutil.tz import tz
+import sys, getopt
 
 from models import Contacto, MensagemCompleta, Reaction, File, Chamada, ConversationCreationDetails, EventCall
 import glob
@@ -218,7 +219,7 @@ def criarObjetosDeEventCalls():
             callduration = ""
 
             indexcallduration = line.find("<duration>")
-            indexcalldurationfinal = line.find("</duration>",indexcallduration)
+            indexcalldurationfinal = line.find("</duration>", indexcallduration)
 
             lista = list(line)
             for i in range(indexcallduration + 10, indexcalldurationfinal):
@@ -524,7 +525,7 @@ def filtro(buffer):
     richHtml = ""
     reacaoChunk = ""
     isReacaoChunk = False
-    hasFiles=False
+    hasFiles = False
     emojiReaction = ""
     orgidReaction = ""
     timeReaction = ""
@@ -773,8 +774,8 @@ def filtro(buffer):
                     indexNomeFile += 20
                     fich = File(url, nomeFile)
                     files.append(fich)
-                    if files.__len__()!=0:
-                        hasFiles=True
+                    if files.__len__() != 0:
+                        hasFiles = True
             if "call-log" in line:
                 # print(line)
                 start = ""
@@ -893,7 +894,7 @@ def filtro(buffer):
                 arrayReacoes.clear()
                 mensagem.files = files
                 arrayMensagens.append(mensagem)
-                hasFiles=False
+                hasFiles = False
 
 
 def findpadrao():
@@ -1106,6 +1107,28 @@ def geraContactos():
 
 
 if __name__ == "__main__":
+    args = sys.argv[1:]
+    pathUsers = ""
+    pathAppdata = ""
+    try:
+        opts, args = getopt.getopt(args, "hua:", ["users=", "appdata="])
+    except getopt.GetoptError:
+        print('ei.py -u <pathToUsers> ')
+        print("or")
+        print('ei.py -a <pathToAppdata>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('ei.py -u <pathToUsers> ')
+            print("or")
+            print('ei.py -a <pathToAppdata>')
+            sys.exit()
+        elif opt in ("-u", "--users"):
+            pathUsers = arg
+        elif opt in ("-a", "--appdata"):
+            levelDBPath = projetoEIAppDataPath + "\\"+arg
+            print("-a")
+
     crialogtotal()
     geraContactos()
 
