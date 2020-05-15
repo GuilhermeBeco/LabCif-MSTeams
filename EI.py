@@ -17,8 +17,7 @@ home = str(Path.home())
 levelDBPath = appdata + "\\Microsoft\\Teams\\IndexedDB\\https_teams.microsoft.com_0.indexeddb.leveldb"
 levelDBPathLost = appdata + "\\Microsoft\\Teams\\IndexedDB\\https_teams.microsoft.com_0.indexeddb.leveldb\\lost"
 projetoEIAppDataPath = appdata + "\\ProjetoEI\\"
-logFinal = open(os.path.join(projetoEIAppDataPath, "logTotal.txt"), "a+", encoding="utf-8")
-logMsgs = open(os.path.join(projetoEIAppDataPath, "logMsgs.txt"), "a+", encoding="utf-8")
+
 linkEmoji = "https://statics.teams.cdn.office.net/evergreen-assets/skype/v2/{0}/50.png"
 arrayRich = []
 arrayMensagens = []
@@ -29,6 +28,8 @@ arrayCallOneToOne = []
 arrayTeams = []
 arrayEventCall = []
 dictionaryConversationDetails = {}
+arrayUsers = []
+dictArrays = {}
 
 
 def find(pt, path):
@@ -83,7 +84,8 @@ def utf16customdecoder(string, pattern):
     return st
 
 
-def testeldb(path):
+def testeldb(path, pathArmazenamento):
+    logFinal = open(os.path.join(pathArmazenamento, "logTotal.txt"), "a+", encoding="utf-8")
     from subprocess import Popen, PIPE
     import ast
     for f in os.listdir(path):
@@ -101,33 +103,35 @@ def testeldb(path):
                 print("falhou")
 
 
-def writelog(path):
+def writelog(path, pathArmazenamento):
+    logFinal = open(os.path.join(pathArmazenamento, "logTotal.txt"), "a+", encoding="utf-8")
     log = open(path, "r", encoding="mbcs")
     while line := log.readline():
         logFinal.write(line)
     log.close()
 
 
-def crialogtotal():
+def crialogtotal(pathArmazenamento):
     # os.system(r'cmd /c "LDBReader\PrjTeam.exe"')
-    os.system('cmd /c "LevelDBReader\eiTeste.exe \"{0}\""'.format(levelDBPath))
-    testeldb(levelDBPathLost)
+    logFinal = open(os.path.join(pathArmazenamento, "logTotal.txt"), "a+", encoding="utf-8")
+    os.system('cmd /c "LevelDBReader\eiTeste.exe "{0}" "{1}"'.format(levelDBPath, pathArmazenamento))
+    testeldb(levelDBPathLost, pathArmazenamento)
     logLost = find(".log", levelDBPathLost)
-    writelog(os.path.join(projetoEIAppDataPath, "logIndexedDB.txt"))
+    writelog(os.path.join(pathArmazenamento, "logIndexedDB.txt"), pathArmazenamento)
     logsIndex = find(".log", levelDBPath)
     for path in logLost:
-        writelog(path)
+        writelog(path, pathArmazenamento)
     for path in logsIndex:
-        writelog(path)
+        writelog(path, pathArmazenamento)
     logFinal.close()
 
 
-def extrairEventCallsToFile():
+def extrairEventCallsToFile(pathArmazenamento):
     # Ficheiro onde vão ser colocadas as informações das chamadas
-    logEventCalls = open(os.path.join(projetoEIAppDataPath, "eventCalls.txt"), "a+", encoding="utf-8")
+    logEventCalls = open(os.path.join(pathArmazenamento, "eventCalls.txt"), "a+", encoding="utf-8")
 
     # abrir ficheiro logTotal para extrair informações de chamadas
-    logFinalRead = open(os.path.join(projetoEIAppDataPath, "logTotal.txt"), "r", encoding="utf-8")
+    logFinalRead = open(os.path.join(pathArmazenamento, "logTotal.txt"), "r", encoding="utf-8")
 
     flagWrite = 0  # flag que indica quando escrever para o ficheiro
     buffer = ""
@@ -158,11 +162,9 @@ def extrairEventCallsToFile():
 
 
 # funcao que cria objetos com a info das chamadas obtida na funcao 'extrairEventCallsToFile()'
-def criarObjetosDeEventCalls():
-    logObjetosEventCalls = open(os.path.join(projetoEIAppDataPath, "objetosEventCalls.txt"), "a+", encoding="utf-8")
-
+def criarObjetosDeEventCalls(pathArmazenamento):
     # abrir ficheiro eventCalls para extrair informações de chamadas
-    logEventCalls = open(os.path.join(projetoEIAppDataPath, "eventCalls.txt"), "r", encoding="utf-8")
+    logEventCalls = open(os.path.join(pathArmazenamento, "eventCalls.txt"), "r", encoding="utf-8")
 
     while line := logEventCalls.readline():
         marcador = 0
@@ -259,23 +261,17 @@ def criarObjetosDeEventCalls():
             eventcall = EventCall(str(calldate), callcreator, participantscount, callduration, participants, orgids)
             arrayEventCall.append(eventcall)
             # escrever para log
-            logObjetosEventCalls.write(eventcall.toString() + "\n")
-            logObjetosEventCalls.write(
-                "----------------------------------------------------------------------------------------------------------------------------------------\n")
-            logObjetosEventCalls.write(
-                "----------------------------------------------------------------------------------------------------------------------------------------\n")
 
     # fechar ficheiros
     logEventCalls.close()
-    logObjetosEventCalls.close()
 
 
-def criacaoDeEquipas():
+def criacaoDeEquipas(pathArmazenamento):
     # ficheiro onde vão ser colocadas as informações da criação de equipas
-    logTeamsCreation = open(os.path.join(projetoEIAppDataPath, "teamsCreation.txt"), "a+", encoding="utf-8")
+    logTeamsCreation = open(os.path.join(pathArmazenamento, "teamsCreation.txt"), "a+", encoding="utf-8")
 
     # abrir ficheiro logTotal para extrair informações de criacao das equipas
-    logFinalRead = open(os.path.join(projetoEIAppDataPath, "logTotal.txt"), "r", encoding="utf-8")
+    logFinalRead = open(os.path.join(pathArmazenamento, "logTotal.txt"), "r", encoding="utf-8")
 
     flagWrite = 0  # flag que indica quando escrever para o ficheiro
     count = 1
@@ -302,13 +298,11 @@ def criacaoDeEquipas():
     logTeamsCreation.close()
 
 
-def criarObjetosDeCriacaoDeEquipas():
+def criarObjetosDeCriacaoDeEquipas(pathArmazenamento):
     # ficheiro para guardar objetos de criacao de conversacoes/Equipas
-    logObjetoscriacaoEquipas = open(os.path.join(projetoEIAppDataPath, "objetosCriacaoEquipas.txt"), "a+",
-                                    encoding="utf-8")
 
     # abrir ficheiro com a informacao das equipas para criar objetos
-    logTeamsCreation = open(os.path.join(projetoEIAppDataPath, "teamsCreation.txt"), "r", encoding="utf-8")
+    logTeamsCreation = open(os.path.join(pathArmazenamento, "teamsCreation.txt"), "r", encoding="utf-8")
 
     conversationid = ""
     date = ""
@@ -500,12 +494,6 @@ def criarObjetosDeCriacaoDeEquipas():
                 members.append(user_orgid)
         conversa.members = members.copy()
 
-    # print array to log file
-    for conversation_details in dictionaryConversationDetails.values():
-        logObjetoscriacaoEquipas.write(conversation_details.toString() + "\n")
-
-    # fechar ficheiros
-    logObjetoscriacaoEquipas.close()
     logTeamsCreation.close()
 
 
@@ -548,7 +536,6 @@ def filtro(buffer):
             ok = 0
 
     if ok:
-        logMsgs.write("-------------------------------------------------------------------------------\n")
         isMention = False
         mention = ""
         orgid = ""
@@ -556,7 +543,6 @@ def filtro(buffer):
 
         existe = False
         for line in buffer:
-            logMsgs.write(line)
             name = ""
             if "conversationId\"[" in line or "@thread.tacv2" in line:
                 indexCvId = line.find("conversationId\"")
@@ -594,10 +580,10 @@ def filtro(buffer):
 
             if "composetime" in line:
                 indexTempo = line.find("originalarrivaltime")
-                indexTempoFinal = line.find("clientArrivalTime",indexTempo)
+                indexTempoFinal = line.find("clientArrivalTime", indexTempo)
 
                 l = list(line)
-                for x in range(indexTempo+21,indexTempoFinal-2):
+                for x in range(indexTempo + 21, indexTempoFinal - 2):
                     name = name + l[x]
                 name = name.replace("\"", "")
 
@@ -887,8 +873,6 @@ def filtro(buffer):
 
         reacaoChunk = ""
 
-        logMsgs.write("-------------------------------------------------------------------------------\n")
-
         if message != "" or hasFiles:
             if "Call Log for Call" not in message:
                 mensagem = MensagemCompleta()
@@ -907,8 +891,8 @@ def filtro(buffer):
                 hasFiles = False
 
 
-def findpadrao():
-    logFinalRead = open(os.path.join(projetoEIAppDataPath, "logTotal.txt"), "r", encoding="utf-8")
+def findpadrao(pathArmazenanto):
+    logFinalRead = open(os.path.join(pathArmazenanto, "logTotal.txt"), "r", encoding="utf-8")
     flagMgs = 0
     stringBuffer = ""
     toCompare = False
@@ -949,7 +933,6 @@ def findpadrao():
             stringBuffer = ""
         ready = False
     logFinalRead.close()
-    logMsgs.close()
     print(arrayMensagens.__len__())
     for m in arrayMensagens:
         print(m.toString())
@@ -957,9 +940,8 @@ def findpadrao():
     # logCall.close()
 
 
-
-def geraContactos():
-    logFinalRead = open(os.path.join(projetoEIAppDataPath, "logTotal.txt"), "r", encoding="utf-8")
+def geraContactos(pathArmazenamento):
+    logFinalRead = open(os.path.join(pathArmazenamento, "logTotal.txt"), "r", encoding="utf-8")
     orgid = ""
     name = ""
     mail = ""
@@ -1016,42 +998,107 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     pathUsers = ""
     pathAppdata = ""
+    dupped = False
     try:
         opts, args = getopt.getopt(args, "hua:", ["users=", "autopsy="])
     except getopt.GetoptError:
         print('ei.py -u <pathToUsers> ')
         print("or")
-        print('ei.py -a <pathToAppdata>')
+        print('ei.py -a <pathToAppdataProjetoEI>')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
             print('ei.py -u <pathToUsers> ')
             print("or")
-            print('ei.py -a <pathToAppdata>')
+            print('ei.py -a <pathToAppdataProjetoEI>')
             sys.exit()
         elif opt in ("-u", "--users"):
+            print(arg)
+            count = 0
+            pathMulti = ""
+            # fileTest = open(projetoEIAppDataPath + "teste.txt", "a+", encoding="UTF-8")
             pathUsers = arg
+            for root, dirs, files in os.walk(pathUsers):
+                for name in dirs:
+                    if "https_teams.microsoft.com" in name:
+                        for user in arrayUsers:
+                            if name == user:
+                                dupped = True
+                        if not dupped:
+                            arrayUsers.append(os.path.join(root, name))
+                            levelDBPath = os.path.join(root, name)
+                            count += 1
+                            dupped = False
+                            try:
+                                pathMulti = projetoEIAppDataPath + str(count) + "\\"
+                                os.mkdir(pathMulti)
+                            except OSError:
+                                print("Creation of the directory %s failed" % pathMulti)
+                            else:
+                                print("Successfully created the directory %s " % pathMulti)
+
+                            crialogtotal(pathMulti)
+
+                            geraContactos(pathMulti)
+
+                            criacaoDeEquipas(pathMulti)
+                            criarObjetosDeCriacaoDeEquipas(pathMulti)
+
+                            extrairEventCallsToFile(pathMulti)
+                            criarObjetosDeEventCalls(pathMulti)
+
+                            findpadrao(pathMulti)
+                            dictArrays[pathMulti + " - Contactos"] = arrayContactos
+                            for key, value in arrayContactos.items():
+                                # fileTest.write(value.toString())
+                                print(key, value.toString())
+                            arrayContactos.clear()
+                            dictArrays[pathMulti + " - Mensagens"] = arrayMensagens
+                            for m in arrayMensagens:
+                                print(m.toString())
+                                # fileTest.write(m.toString())
+                            arrayMensagens.clear()
+                            dictArrays[pathMulti + " - EventCall"] = arrayEventCall
+                            for call in arrayEventCall:
+                                print(call.toString())
+                                # fileTest.write(call.toString())
+                            arrayEventCall.clear()
+                            dictArrays[pathMulti + " - Conversation Details"] = dictionaryConversationDetails
+                            for key, value in dictionaryConversationDetails.items():
+                                print(key, value.toString())
+                                # fileTest.write(value.toString())
+                            dictionaryConversationDetails.clear()
+                            dictArrays[pathMulti + " - ChamadasOneToOne"] = arrayCallOneToOne
+                            for ch in arrayCallOneToOne:
+                                print(ch.toString())
+                                # fileTest.write(ch.toString())
+                            arrayCallOneToOne.clear()
+            #                 fileTest.write("-------------------------------------")
+            #                 fileTest.write("-------------------------------------")
+            #                 fileTest.write("-------------------------------------")
+            # fileTest.close()
         elif opt in ("-a", "--autopsy"):
+            # -a https_teams.microsoft.com_0.indexeddb.leveldb
             levelDBPath = projetoEIAppDataPath + "\\" + arg
-            print("-a")
 
-    crialogtotal()
-    geraContactos()
+            crialogtotal(projetoEIAppDataPath)
+            geraContactos(projetoEIAppDataPath)
 
-    criacaoDeEquipas()
-    criarObjetosDeCriacaoDeEquipas()
+            criacaoDeEquipas(projetoEIAppDataPath)
+            criarObjetosDeCriacaoDeEquipas(projetoEIAppDataPath)
 
-    extrairEventCallsToFile()
-    criarObjetosDeEventCalls()
+            extrairEventCallsToFile(projetoEIAppDataPath)
+            criarObjetosDeEventCalls(projetoEIAppDataPath)
 
-    findpadrao()
-    for key, value in arrayContactos.items():
-        print(key, value.toString())
-    for m in arrayMensagens:
-        print(m.toString())
-    for call in arrayEventCall:
-        print(call.toString())
-    for key, value in dictionaryConversationDetails.items():
-        print(key, value.toString())
-    for ch in arrayCallOneToOne:
-        print(ch.toString())
+            findpadrao(projetoEIAppDataPath)
+
+            for key, value in arrayContactos.items():
+                print(key, value.toString())
+            for m in arrayMensagens:
+                print(m.toString())
+            for call in arrayEventCall:
+                print(call.toString())
+            for key, value in dictionaryConversationDetails.items():
+                print(key, value.toString())
+            for ch in arrayCallOneToOne:
+                print(ch.toString())
