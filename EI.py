@@ -1,16 +1,17 @@
-import codecs
+import getopt
+import glob
 import os
+import pathlib
 import re
+import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
 import zulu as zulu
 from dateutil.tz import tz
-import sys, getopt
 
 from models import Contacto, MensagemCompleta, Reaction, File, Chamada, ConversationCreationDetails, EventCall
-import glob
-import pathlib
 
 appdata = os.getenv('APPDATA')
 home = str(Path.home())
@@ -90,7 +91,9 @@ def testeldb(path, pathArmazenamento):
     import ast
     for f in os.listdir(path):
         if f.endswith(".ldb") and os.path.getsize(path + "\\" + f) > 0:
-            process = Popen([os.path.join(home, r"PycharmProjects\EI\ldbdump"), os.path.join(path, f)], stdout=PIPE)
+            wd = os.getcwd()
+            print(wd)
+            process = Popen([os.path.join(wd, r"ldbdump"), os.path.join(path, f)], stdout=PIPE)
             (output, err) = process.communicate()
             try:
                 result = output.decode("utf-8")
@@ -114,7 +117,7 @@ def writelog(path, pathArmazenamento):
 def crialogtotal(pathArmazenamento):
     # os.system(r'cmd /c "LDBReader\PrjTeam.exe"')
     logFinal = open(os.path.join(pathArmazenamento, "logTotal.txt"), "a+", encoding="utf-8")
-    os.system('cmd /c "LevelDBReader\eiTeste.exe "{0}" "{1}"'.format(levelDBPath, pathArmazenamento))
+    # os.system('cmd /c "LevelDBReader\eiTeste.exe "{0}" "{1}"'.format(levelDBPath, pathArmazenamento))
     testeldb(levelDBPathLost, pathArmazenamento)
     logLost = find(".log", levelDBPathLost)
     writelog(os.path.join(pathArmazenamento, "logIndexedDB.txt"), pathArmazenamento)
@@ -1027,10 +1030,10 @@ if __name__ == "__main__":
                         if not dupped:
                             arrayUsers.append(os.path.join(root, name))
                             levelDBPath = os.path.join(root, name)
-                            count += 1
+                            current_milli_time = lambda: int(round(time.time() * 1000))
                             dupped = False
                             try:
-                                pathMulti = projetoEIAppDataPath + str(count) + "\\"
+                                pathMulti = projetoEIAppDataPath + str(current_milli_time()) + "\\"
                                 os.mkdir(pathMulti)
                             except OSError:
                                 print("Creation of the directory %s failed" % pathMulti)
