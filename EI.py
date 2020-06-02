@@ -1,7 +1,7 @@
 import getopt
-import glob
+import csv
+import math
 import os
-import pathlib
 import re
 import sys
 import time
@@ -30,7 +30,6 @@ arrayTeams = []
 arrayEventCall = []
 dictionaryConversationDetails = {}
 arrayUsers = []
-dictArrays = {}
 
 
 def find(pt, path):
@@ -87,12 +86,12 @@ def utf16customdecoder(string, pattern):
 
 def testeldb(path, pathArmazenamento):
     logFinal = open(os.path.join(pathArmazenamento, "logTotal.txt"), "a+", encoding="utf-8")
+    print(path)
     from subprocess import Popen, PIPE
     import ast
     for f in os.listdir(path):
         if f.endswith(".ldb") and os.path.getsize(path + "\\" + f) > 0:
             wd = os.getcwd()
-            print(wd)
             process = Popen([os.path.join(wd, r"ldbdump"), os.path.join(path, f)], stdout=PIPE)
             (output, err) = process.communicate()
             try:
@@ -117,9 +116,9 @@ def writelog(path, pathArmazenamento):
 def crialogtotal(pathArmazenamento):
     # os.system(r'cmd /c "LDBReader\PrjTeam.exe"')
     logFinal = open(os.path.join(pathArmazenamento, "logTotal.txt"), "a+", encoding="utf-8")
-    # os.system('cmd /c "LevelDBReader\eiTeste.exe "{0}" "{1}"'.format(levelDBPath, pathArmazenamento))
-    testeldb(levelDBPathLost, pathArmazenamento)
-    logLost = find(".log", levelDBPathLost)
+    os.system('cmd /c "LevelDBReader\eiTeste.exe "{0}" "{1}"'.format(levelDBPath, pathArmazenamento))
+    testeldb(levelDBPath+"\\lost", pathArmazenamento)
+    logLost = find(".log", levelDBPath+"\\lost")
     writelog(os.path.join(pathArmazenamento, "logIndexedDB.txt"), pathArmazenamento)
     logsIndex = find(".log", levelDBPath)
     for path in logLost:
@@ -203,7 +202,10 @@ def criarObjetosDeEventCalls(pathArmazenamento):
 
             # verficar se orgid existe na lista de contactos do utilizador
             if callcreator in arrayContactos:
-                callcreator = arrayContactos[callcreator].nome
+                callcreator = arrayContactos[callcreator]
+            else:
+                oID = callcreator
+                callcreator = Contacto('Desc.', 'Desc.', oID)
 
         if "Event/Call" in line:
             # ir buscar numero total de participantes na chamada
@@ -484,17 +486,20 @@ def criarObjetosDeCriacaoDeEquipas(pathArmazenamento):
         # ir buscar contacto do criador da conversacao
         if conversa.creator in arrayContactos:
             creator = arrayContactos[conversa.creator]
-            conversa.creator = ""
-            conversa.creator = creator.toString()
+            conversa.creator = creator
+        if isinstance(conversa.creator, str):
+            oID = conversa.creator
+            conversa.creator = Contacto('Desc.', 'Desc.', oID)
 
         # ir buscar contacto do(s) membro(s) a ser(em) adicionado(s)
         members = []
         for user_orgid in conversa.members:
             if user_orgid in arrayContactos:
                 member = arrayContactos[user_orgid]
-                members.append(member.toString())
+                members.append(member)
             else:
-                members.append(user_orgid)
+                us = Contacto("Desc.", "Desc.", user_orgid)
+                members.append(us)
         conversa.members = members.copy()
 
     logTeamsCreation.close()
@@ -522,6 +527,8 @@ def filtro(buffer):
     timeReaction = ""
     cvId = ""
     message = ""
+    elogio = ""
+    adptiveCard = False
     reactions = []
     reacaoChunkReady = False
     files = []
@@ -692,6 +699,21 @@ def filtro(buffer):
                     richHtml = "RichText<div>" + richHtml
                     richHtml += "</div>"
 
+                if "http://schema.skype.com/InputExtension\"><span itemprop=\"cardId\"" in richHtml:
+                    indexAdaptiveCard = richHtml.find("<span itemid")
+                    indexAdaptiveCardFinal = richHtml.find("</div></div></div></div></div></div></div>",
+                                                           indexAdaptiveCard)
+                    spanCard = ""
+                    l = list(richHtml)
+                    for x in range(indexAdaptiveCard, indexAdaptiveCardFinal + 35):
+                        spanCard += l[x]
+                    richHtml = richHtml.replace(spanCard, "A praise was given to ")
+                    adptiveCard = True
+                    richHtml = richHtml.replace("<div>", "")
+                    richHtml = richHtml.replace("</div>", "")
+                    richHtml = "RichText<div>" + richHtml
+                    richHtml += "</div>"
+
                 if richHtml.find("RichText") != -1:
                     rHtml = ""
                     richHtml = richHtml.replace("<div style=\"font-size:14px;\"", "")
@@ -738,6 +760,7 @@ def filtro(buffer):
                     if name.find(">", 2):
                         name = name.replace(">", "", 1)
                     message = name
+                    message = message.replace("Mention:  ", "")
                     name = ""
                     isRichHtmlDone = False
             if "http://schema.skype.com/File" in line:
@@ -775,6 +798,13 @@ def filtro(buffer):
                     files.append(fich)
                     if files.__len__() != 0:
                         hasFiles = True
+            if adptiveCard and "\"type\":\"AdaptiveCard\"" in line:
+                indexAltText = line.find("altText")
+                indexAltTextFinal = line.find("horizontalAlignment", indexAltText)
+                l = list(line)
+                for x in range(indexAltText + 10, indexAltTextFinal - 3):
+                    elogio += l[x]
+
             if "call-log" in line:
                 # print(line)
                 start = ""
@@ -875,23 +905,30 @@ def filtro(buffer):
                         reacaoChunkReady = False
 
         reacaoChunk = ""
-
         if message != "" or hasFiles:
-            if "Call Log for Call" not in message:
-                mensagem = MensagemCompleta()
-                if isMention:
-                    mensagem.isMention = True
-                mensagem.mention = mention
-                mensagem.message = message
-                mensagem.time = time
-                mensagem.sender = sender
+            if message.count("A praise was given to") < 2:
+                if "Call Log for Call" not in message:
+                    if adptiveCard:
+                        message += "Praise: {}".format(elogio)
+                        message = message.replace(r"\n'", "")
+                        message = message.replace("\"", "")
+                        elogio = ""
+                        adptiveCard = False
+                        print(message)
+                    mensagem = MensagemCompleta()
+                    if isMention:
+                        mensagem.isMention = True
+                    mensagem.mention = mention
+                    mensagem.message = message
+                    mensagem.time = time
+                    mensagem.sender = sender
 
-                mensagem.cvID = cvId
-                mensagem.reactions = arrayReacoes
-                arrayReacoes.clear()
-                mensagem.files = files
-                arrayMensagens.append(mensagem)
-                hasFiles = False
+                    mensagem.cvID = cvId
+                    mensagem.reactions = arrayReacoes
+                    arrayReacoes.clear()
+                    mensagem.files = files
+                    arrayMensagens.append(mensagem)
+                    hasFiles = False
 
 
 def findpadrao(pathArmazenanto):
@@ -936,9 +973,6 @@ def findpadrao(pathArmazenanto):
             stringBuffer = ""
         ready = False
     logFinalRead.close()
-    print(arrayMensagens.__len__())
-    for m in arrayMensagens:
-        print(m.toString())
 
     # logCall.close()
 
@@ -1001,6 +1035,7 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     pathUsers = ""
     pathAppdata = ""
+    current_milli_time = lambda: datetime.fromtimestamp(math.floor(time.time())).strftime("%m-%d-%Y, %Hh_%Mm_%Ss")
     dupped = False
     try:
         opts, args = getopt.getopt(args, "hua:", ["users=", "autopsy="])
@@ -1019,7 +1054,6 @@ if __name__ == "__main__":
             print(arg)
             count = 0
             pathMulti = ""
-            # fileTest = open(projetoEIAppDataPath + "teste.txt", "a+", encoding="UTF-8")
             pathUsers = arg
             for root, dirs, files in os.walk(pathUsers):
                 for name in dirs:
@@ -1030,10 +1064,11 @@ if __name__ == "__main__":
                         if not dupped:
                             arrayUsers.append(os.path.join(root, name))
                             levelDBPath = os.path.join(root, name)
-                            current_milli_time = lambda: int(round(time.time() * 1000))
                             dupped = False
                             try:
-                                pathMulti = projetoEIAppDataPath + str(current_milli_time()) + "\\"
+                                os.mkdir(projetoEIAppDataPath)
+                                pathMulti = projetoEIAppDataPath + " Analise standalone {}".format(
+                                    current_milli_time()) + "\\"
                                 os.mkdir(pathMulti)
                             except OSError:
                                 print("Creation of the directory %s failed" % pathMulti)
@@ -1051,57 +1086,204 @@ if __name__ == "__main__":
                             criarObjetosDeEventCalls(pathMulti)
 
                             findpadrao(pathMulti)
-                            dictArrays[pathMulti + " - Contactos"] = arrayContactos
-                            for key, value in arrayContactos.items():
-                                # fileTest.write(value.toString())
-                                print(key, value.toString())
+                            with open(os.path.join(pathMulti, 'Contactos.csv'), 'a+', newline='',
+                                      encoding="utf-8") as csvfile:
+                                fieldnames = ['nome', 'email', 'orgid']
+                                messagewriter = csv.writer(csvfile, delimiter=';',
+                                                           quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                                messagewriter.writerow(fieldnames)
+                                for key, value in arrayContactos.items():
+                                    messagewriter.writerow([value.nome, value.email, value.orgid])
+                                csvfile.close()
                             arrayContactos.clear()
-                            dictArrays[pathMulti + " - Mensagens"] = arrayMensagens
-                            for m in arrayMensagens:
-                                print(m.toString())
-                                # fileTest.write(m.toString())
+                            with open(os.path.join(pathMulti, 'Mensagens.csv'), 'a+', newline='',
+                                      encoding="utf-8") as csvfile:
+                                fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'conversation_id']
+                                messagewriter = csv.writer(csvfile, delimiter=';',
+                                                           quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                                messagewriter.writerow(fieldnames)
+                                # TODO falta as reações
+                                for m in arrayMensagens:
+                                    if len(m.files) > 0:
+                                        for f in m.files:
+                                            messagewriter.writerow([m.message, m.time, m.sender, f.nome, f.local])
+                                    else:
+                                        messagewriter.writerow([m.message, m.time, m.sender, 'NA', 'NA'])
+                                csvfile.close()
                             arrayMensagens.clear()
-                            dictArrays[pathMulti + " - EventCall"] = arrayEventCall
-                            for call in arrayEventCall:
-                                print(call.toString())
-                                # fileTest.write(call.toString())
+                            with open(os.path.join(pathMulti, 'EventCall.csv'), 'a+', newline='',
+                                      encoding="utf-8") as csvfile:
+                                fieldnames = ['calldate', 'creator_name', 'creator_email', 'count', 'duration',
+                                              'participant_name',
+                                              'participant_email']
+                                callwriter = csv.writer(csvfile, delimiter=';',
+                                                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                                callwriter.writerow(fieldnames)
+                                for call in arrayEventCall:
+                                    for oID in call.orgids:
+                                        if oID in arrayContactos:
+                                            c = arrayContactos.get(oID)
+                                        else:
+                                            c = Contacto('Desc.', 'Desc.', oID)
+                                        callwriter.writerow(
+                                            [call.calldate, call.creator.nome, call.creator.email, call.count, c.nome,
+                                             c.email])
+                                csvfile.close()
                             arrayEventCall.clear()
-                            dictArrays[pathMulti + " - Conversation Details"] = dictionaryConversationDetails
-                            for key, value in dictionaryConversationDetails.items():
-                                print(key, value.toString())
-                                # fileTest.write(value.toString())
+                            with open(os.path.join(pathMulti, 'Conversations.csv'), 'a+', newline='',
+                                      encoding="utf-8") as csvfile:
+                                fieldnames = ['conversation_ID', 'date', 'nome_creator', 'email_creator', 'member_name',
+                                              'member_email']
+                                callwriter = csv.writer(csvfile, delimiter=';',
+                                                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                                callwriter.writerow(fieldnames)
+                                for key, value in dictionaryConversationDetails.items():
+                                    for member in value.members:
+                                        callwriter.writerow(
+                                            [value.conversation_id, value.date, value.creator.nome, value.creator.email,
+                                             member.nome,
+                                             member.email])
+                                csvfile.close()
                             dictionaryConversationDetails.clear()
-                            dictArrays[pathMulti + " - ChamadasOneToOne"] = arrayCallOneToOne
-                            for ch in arrayCallOneToOne:
-                                print(ch.toString())
-                                # fileTest.write(ch.toString())
-                            arrayCallOneToOne.clear()
-            #                 fileTest.write("-------------------------------------")
-            #                 fileTest.write("-------------------------------------")
-            #                 fileTest.write("-------------------------------------")
-            # fileTest.close()
+                            with open(os.path.join(pathMulti, 'CallOneToOne.csv'), 'a+', newline='',
+                                      encoding="utf-8") as csvfile:
+                                fieldnames = ['originator_name', 'originator_email', 'time_start', 'time_finish',
+                                              'target_nome',
+                                              'target_email', 'state']
+                                callwriter = csv.writer(csvfile, delimiter=';', quotechar='|',
+                                                        quoting=csv.QUOTE_MINIMAL)
+                                callwriter.writerow(fieldnames)
+                                for ch in arrayCallOneToOne:
+                                    callwriter.writerow(
+                                        [ch.criador.nome, ch.criador.email, ch.timestart, ch.timefinish,
+                                         ch.presente.nome,
+                                         ch.presente.email, ch.state])
+                                csvfile.close()
         elif opt in ("-a", "--autopsy"):
             # -a https_teams.microsoft.com_0.indexeddb.leveldb
             levelDBPath = projetoEIAppDataPath + "\\" + arg
+            pathToAutopsy = projetoEIAppDataPath + "\\Analise Autopsy {}".format(str(current_milli_time()))
+            if not os.path.exists(projetoEIAppDataPath):
+                try:
+                    os.mkdir(projetoEIAppDataPath)
+                except OSError:
+                    print("Creation of the directory %s failed" % projetoEIAppDataPath)
+                else:
+                    print("Successfully created the directory %s " % projetoEIAppDataPath)
+            try:
+                os.mkdir(pathToAutopsy)
+            except OSError:
+                print("Creation of the directory %s failed" % pathToAutopsy)
+            else:
+                print("Successfully created the directory %s " % pathToAutopsy)
+            crialogtotal(pathToAutopsy)
+            geraContactos(pathToAutopsy)
 
-            crialogtotal(projetoEIAppDataPath)
-            geraContactos(projetoEIAppDataPath)
+            criacaoDeEquipas(pathToAutopsy)
+            criarObjetosDeCriacaoDeEquipas(pathToAutopsy)
 
-            criacaoDeEquipas(projetoEIAppDataPath)
-            criarObjetosDeCriacaoDeEquipas(projetoEIAppDataPath)
+            extrairEventCallsToFile(pathToAutopsy)
+            criarObjetosDeEventCalls(pathToAutopsy)
 
-            extrairEventCallsToFile(projetoEIAppDataPath)
-            criarObjetosDeEventCalls(projetoEIAppDataPath)
+            findpadrao(pathToAutopsy)
 
-            findpadrao(projetoEIAppDataPath)
+            with open(os.path.join(pathToAutopsy, 'Contactos.csv'), 'a+', newline='', encoding="utf-8") as csvfile:
+                fieldnames = ['nome', 'email', 'orgid']
+                messagewriter = csv.writer(csvfile, delimiter=';',
+                                           quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                messagewriter.writerow(fieldnames)
+                for key, value in arrayContactos.items():
+                    messagewriter.writerow([value.nome, value.email, value.orgid])
+                csvfile.close()
 
-            for key, value in arrayContactos.items():
-                print(key, value.toString())
-            for m in arrayMensagens:
-                print(m.toString())
-            for call in arrayEventCall:
-                print(call.toString())
-            for key, value in dictionaryConversationDetails.items():
-                print(key, value.toString())
-            for ch in arrayCallOneToOne:
-                print(ch.toString())
+            with open(os.path.join(pathToAutopsy, 'Mensagens.csv'), 'a+', newline='', encoding="utf-8") as csvfile:
+                fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'conversation_id', 'reacted_by',
+                              'reacted_with']
+                messagewriter = csv.writer(csvfile, delimiter=';',
+                                           quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                messagewriter.writerow(fieldnames)
+                row = []
+                countFiles = 0
+                hasFiles = False
+                hasReactions = False
+                # TODO falta as reações
+                for m in arrayMensagens:
+                    row.append(m.message)
+                    row.append(m.time)
+                    row.append(m.sender)
+                    if len(m.files) > 0:
+                        hasFiles = True
+                    if len(m.reactions) > 0:
+                        hasReactions = True
+
+                    if hasFiles:
+                        while countFiles < len(m.files):
+                            row.append(m.files[countFiles].nome)
+                            row.append(m.files[countFiles].local)
+                            if hasReactions:
+                                for r in m.reactions:
+                                    row.append(r.orgid)
+                                    row.append(r.emoji)
+                            else:
+                                row.append("NA")
+                                row.append("NA")
+                            messagewriter.writerow(row)
+                            countFiles += 1
+                    else:
+                        if hasReactions:
+                            for r in m.reactions:
+                                row.append(r.orgid)
+                                row.append(r.emoji)
+                        else:
+                            row.append("NA")
+                            row.append("NA")
+                        messagewriter.writerow(row)
+                    row.clear()
+                    hasFiles = False
+                    hasReactions = False
+                csvfile.close()
+
+            with open(os.path.join(pathToAutopsy, 'EventCall.csv'), 'a+', newline='',
+                      encoding="utf-8") as csvfile:
+                fieldnames = ['calldate', 'creator_name', 'creator_email', 'count', 'duration', 'participant_name',
+                              'participant_email']
+                callwriter = csv.writer(csvfile, delimiter=';',
+                                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                callwriter.writerow(fieldnames)
+                for call in arrayEventCall:
+                    for oID in call.orgids:
+                        if oID in arrayContactos:
+                            c = arrayContactos.get(oID)
+                        else:
+                            c = Contacto('Desc.', 'Desc.', oID)
+                        callwriter.writerow(
+                            [call.calldate, call.creator.nome, call.creator.email, call.count, str(call.duration),
+                             c.nome, c.email])
+                csvfile.close()
+
+            with open(os.path.join(pathToAutopsy, 'Conversations.csv'), 'a+', newline='',
+                      encoding="utf-8") as csvfile:
+                fieldnames = ['conversation_ID', 'date', 'nome_creator', 'email_creator', 'member_name',
+                              'member_email']
+                callwriter = csv.writer(csvfile, delimiter=';',
+                                        quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                callwriter.writerow(fieldnames)
+                for key, value in dictionaryConversationDetails.items():
+                    for member in value.members:
+                        callwriter.writerow(
+                            [value.conversation_id, value.date, value.creator.nome, value.creator.email, member.nome,
+                             member.email])
+                csvfile.close()
+
+            with open(os.path.join(pathToAutopsy, 'CallOneToOne.csv'), 'a+', newline='',
+                      encoding="utf-8") as csvfile:
+                fieldnames = ['originator_name', 'originator_email', 'time_start', 'time_finish', 'target_nome',
+                              'target_email', 'state']
+                callwriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                callwriter.writerow(fieldnames)
+                for ch in arrayCallOneToOne:
+                    callwriter.writerow(
+                        [ch.criador.nome, ch.criador.email, ch.timestart, ch.timefinish, ch.presente.nome,
+                         ch.presente.email, ch.state])
+                csvfile.close()
+            print("hiiii")
