@@ -31,7 +31,7 @@ class MensagemCompleta:
 
 
 class Contacto:
-    def __init__(self, nome, email, orgid):
+    def __init__(self, nome="Desc.", email="Desc.", orgid="Desc."):
         self.nome = nome
         self.email = email
         self.orgid = orgid
@@ -87,7 +87,7 @@ class EventCall:
         self.orgids = orgids
 
     def toString(self):
-        return "Data: " + self.calldate + " (UTC) || Criador da chamada: " + self.creator + " || Numero de participantes: " + self.count + " || Duração da chamada (mins): " + self.duration + " || Nomes dos participantes: " + ', '.join(self.participants) + " || Orgids: " + ', '.join(self.orgids)
+        return "Data: " + self.calldate + " (UTC) || Criador da chamada: " + self.creator.toString() + " || Numero de participantes: " + self.count + " || Duração da chamada (mins): " + self.duration + " || Nomes dos participantes: " + ', '.join(self.participants) + " || Orgids: " + ', '.join(self.orgids)
 
 
 class ConversationCreationDetails:

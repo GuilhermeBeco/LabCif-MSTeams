@@ -117,8 +117,8 @@ def crialogtotal(pathArmazenamento):
     # os.system(r'cmd /c "LDBReader\PrjTeam.exe"')
     logFinal = open(os.path.join(pathArmazenamento, "logTotal.txt"), "a+", encoding="utf-8")
     os.system('cmd /c "LevelDBReader\eiTeste.exe "{0}" "{1}"'.format(levelDBPath, pathArmazenamento))
-    testeldb(levelDBPath+"\\lost", pathArmazenamento)
-    logLost = find(".log", levelDBPath+"\\lost")
+    testeldb(levelDBPath + "\\lost", pathArmazenamento)
+    logLost = find(".log", levelDBPath + "\\lost")
     writelog(os.path.join(pathArmazenamento, "logIndexedDB.txt"), pathArmazenamento)
     logsIndex = find(".log", levelDBPath)
     for path in logLost:
@@ -167,17 +167,19 @@ def extrairEventCallsToFile(pathArmazenamento):
 def criarObjetosDeEventCalls(pathArmazenamento):
     # abrir ficheiro eventCalls para extrair informações de chamadas
     logEventCalls = open(os.path.join(pathArmazenamento, "eventCalls.txt"), "r", encoding="utf-8")
-
+    calldate = ""
+    callcreator = ""
+    c=Contacto()
     while line := logEventCalls.readline():
         marcador = 0
 
-        if "pinnedTime_" in line:
+        if "pinnedTime_" in line and calldate == "":
             # ir buscar data da chamada
-            calldate = ""
 
             indexcalldate = line.find("policyViolation")
             indexcalldatefinal = line.find(",8:orgid")
-
+            print(type(calldate))
+            print(calldate)
             lista = list(line)
             for i in range(indexcalldate + 20, indexcalldatefinal):
                 calldate = calldate + lista[i]
@@ -192,7 +194,7 @@ def criarObjetosDeEventCalls(pathArmazenamento):
             calldate = calldate.astimezone(tz=tz.tzlocal())
 
             # ir buscar utilizador que iniciou a chamada
-            callcreator = ""
+
 
             indexcallcreator = line.find("8:orgid:")
             indexcallcreatorfinal = line.find("ackrequired_")
@@ -202,11 +204,11 @@ def criarObjetosDeEventCalls(pathArmazenamento):
 
             # verficar se orgid existe na lista de contactos do utilizador
             if callcreator in arrayContactos:
-                callcreator = arrayContactos[callcreator]
+                c = arrayContactos.get(callcreator)
             else:
                 oID = callcreator
-                callcreator = Contacto('Desc.', 'Desc.', oID)
-
+                c = Contacto('Desc.', 'Desc.', oID)
+            print(c.toString())
         if "Event/Call" in line:
             # ir buscar numero total de participantes na chamada
             participantscount = ""
@@ -263,7 +265,7 @@ def criarObjetosDeEventCalls(pathArmazenamento):
                 orgids.append(orgid)
 
             # criar novo objeto EventCall
-            eventcall = EventCall(str(calldate), callcreator, participantscount, callduration, participants, orgids)
+            eventcall = EventCall(str(calldate), c, participantscount, callduration, participants, orgids)
             arrayEventCall.append(eventcall)
             # escrever para log
 
@@ -735,15 +737,23 @@ def filtro(buffer):
                     if name.find("<a href") != -1:
                         n = list(name)
                         while True:
+                            br=False
                             if "externalid" in name:
                                 break
                             indexHref = name.find("<a href", indexHref)
                             if indexHref == -1:
                                 break
                             indexHrefFinal = name.find("</a>", indexHref) + 4
-                            indexTitle = name.find("\" title=", indexHref)
+                            indexTitle = name.find(" title=", indexHref)
+
                             for x in range(indexHref, indexHrefFinal):
-                                hrefLink += n[x]
+                                try:
+                                    hrefLink += n[x]
+                                except:
+                                    br=True
+                                    break
+                            if br:
+                                break
                             if name.find("\" rel", indexHref, indexTitle) != -1:
                                 indexTitle = name.find("\" rel", indexHref, indexTitle)
                             for x in range(indexHref + 9, indexTitle):
@@ -1065,8 +1075,14 @@ if __name__ == "__main__":
                             arrayUsers.append(os.path.join(root, name))
                             levelDBPath = os.path.join(root, name)
                             dupped = False
+                            if not os.path.exists(projetoEIAppDataPath):
+                                try:
+                                    os.mkdir(projetoEIAppDataPath)
+                                except OSError:
+                                    print("Creation of the directory %s failed" % projetoEIAppDataPath)
+                                else:
+                                    print("Successfully created the directory %s " % projetoEIAppDataPath)
                             try:
-                                os.mkdir(projetoEIAppDataPath)
                                 pathMulti = projetoEIAppDataPath + " Analise standalone {}".format(
                                     current_milli_time()) + "\\"
                                 os.mkdir(pathMulti)
@@ -1124,10 +1140,9 @@ if __name__ == "__main__":
                                         if oID in arrayContactos:
                                             c = arrayContactos.get(oID)
                                         else:
-                                            c = Contacto('Desc.', 'Desc.', oID)
-                                        callwriter.writerow(
-                                            [call.calldate, call.creator.nome, call.creator.email, call.count, c.nome,
-                                             c.email])
+                                            c = Contacto('Desc....', 'Desc.', oID)
+                                        print(call.toString())
+                                        callwriter.writerow([call.calldate, call.creator.nome, call.creator.email, call.count, c.nome,c.email])
                                 csvfile.close()
                             arrayEventCall.clear()
                             with open(os.path.join(pathMulti, 'Conversations.csv'), 'a+', newline='',
