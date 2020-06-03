@@ -169,7 +169,7 @@ def criarObjetosDeEventCalls(pathArmazenamento):
     logEventCalls = open(os.path.join(pathArmazenamento, "eventCalls.txt"), "r", encoding="utf-8")
     calldate = ""
     callcreator = ""
-    c=Contacto()
+    c = Contacto()
     while line := logEventCalls.readline():
         marcador = 0
 
@@ -194,7 +194,6 @@ def criarObjetosDeEventCalls(pathArmazenamento):
             calldate = calldate.astimezone(tz=tz.tzlocal())
 
             # ir buscar utilizador que iniciou a chamada
-
 
             indexcallcreator = line.find("8:orgid:")
             indexcallcreatorfinal = line.find("ackrequired_")
@@ -737,7 +736,7 @@ def filtro(buffer):
                     if name.find("<a href") != -1:
                         n = list(name)
                         while True:
-                            br=False
+                            br = False
                             if "externalid" in name:
                                 break
                             indexHref = name.find("<a href", indexHref)
@@ -750,7 +749,7 @@ def filtro(buffer):
                                 try:
                                     hrefLink += n[x]
                                 except:
-                                    br=True
+                                    br = True
                                     break
                             if br:
                                 break
@@ -1142,7 +1141,9 @@ if __name__ == "__main__":
                                         else:
                                             c = Contacto('Desc....', 'Desc.', oID)
                                         print(call.toString())
-                                        callwriter.writerow([call.calldate, call.creator.nome, call.creator.email, call.count, c.nome,c.email])
+                                        callwriter.writerow(
+                                            [call.calldate, call.creator.nome, call.creator.email, call.count, c.nome,
+                                             c.email])
                                 csvfile.close()
                             arrayEventCall.clear()
                             with open(os.path.join(pathMulti, 'Conversations.csv'), 'a+', newline='',
