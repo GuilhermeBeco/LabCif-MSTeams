@@ -30,6 +30,8 @@ arrayTeams = []
 arrayEventCall = []
 dictionaryConversationDetails = {}
 arrayUsers = []
+dictFiles = {}
+dictReacts = {}
 
 
 def find(pt, path):
@@ -86,7 +88,6 @@ def utf16customdecoder(string, pattern):
 
 def testeldb(path, pathArmazenamento):
     logFinal = open(os.path.join(pathArmazenamento, "logTotal.txt"), "a+", encoding="utf-8")
-    print(path)
     from subprocess import Popen, PIPE
     import ast
     for f in os.listdir(path):
@@ -178,8 +179,6 @@ def criarObjetosDeEventCalls(pathArmazenamento):
 
             indexcalldate = line.find("policyViolation")
             indexcalldatefinal = line.find(",8:orgid")
-            print(type(calldate))
-            print(calldate)
             lista = list(line)
             for i in range(indexcalldate + 20, indexcalldatefinal):
                 calldate = calldate + lista[i]
@@ -207,7 +206,6 @@ def criarObjetosDeEventCalls(pathArmazenamento):
             else:
                 oID = callcreator
                 c = Contacto('Desc.', 'Desc.', oID)
-            print(c.toString())
         if "Event/Call" in line:
             # ir buscar numero total de participantes na chamada
             participantscount = ""
@@ -792,7 +790,6 @@ def filtro(buffer):
                         for x in range(indexCleanTexto, indexCleanTextoFinal):
                             spanDelete += r[x]
                         richHtml = richHtml.replace(spanDelete, "")
-                        print(richHtml)
                     l = list(line)
                     url = ""
                     nomeFile = ""
@@ -815,7 +812,7 @@ def filtro(buffer):
                     elogio += l[x]
 
             if "call-log" in line:
-                # print(line)
+
                 start = ""
                 end = ""
                 state = ""
@@ -882,11 +879,11 @@ def filtro(buffer):
             if reacaoChunkReady:
                 emojiReaction = ""
                 timeReaction = ""
+                arrayReacoes.clear()
                 reacoes = reacaoChunk.split(";")
                 reacoes = list(dict.fromkeys(reacoes))
                 orgidReact = ""
                 for r in reacoes:
-
                     if r != "":
                         reaction = Reaction()
                         rl = list(r)
@@ -909,6 +906,7 @@ def filtro(buffer):
                         reaction.emoji = emojiReaction
                         reaction.time = timeReaction
                         arrayReacoes.append(reaction)
+
                         orgidReact = ""
                         timeReaction = ""
                         reacaoChunkReady = False
@@ -923,10 +921,7 @@ def filtro(buffer):
                         message = message.replace("\"", "")
                         elogio = ""
                         adptiveCard = False
-                        print(message)
                     mensagem = MensagemCompleta()
-                    if isMention:
-                        mensagem.isMention = True
                     mensagem.mention = mention
                     mensagem.message = message
                     mensagem.time = time
@@ -934,10 +929,10 @@ def filtro(buffer):
 
                     mensagem.cvID = cvId
                     mensagem.reactions = arrayReacoes
-                    arrayReacoes.clear()
                     mensagem.files = files
                     arrayMensagens.append(mensagem)
                     hasFiles = False
+
 
 
 def findpadrao(pathArmazenanto):
@@ -1034,8 +1029,6 @@ def geraContactos(pathArmazenamento):
             nAspas = False
 
             contacto = Contacto(nameContacto, emailContacto, orgidContacto)
-            # print(contacto.toString())
-
             if orgidContacto not in arrayContactos and orgidContacto != "":
                 arrayContactos[orgidContacto] = contacto
 
@@ -1111,20 +1104,54 @@ if __name__ == "__main__":
                                     messagewriter.writerow([value.nome, value.email, value.orgid])
                                 csvfile.close()
                             arrayContactos.clear()
-                            with open(os.path.join(pathMulti, 'Mensagens.csv'), 'a+', newline='',
+                            with open(os.path.join(pathToAutopsy, 'Mensagens.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
-                                fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'conversation_id']
-                                messagewriter = csv.writer(csvfile, delimiter=';',
-                                                           quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                                fieldnames = ['messageID', 'message', 'time', 'sender', 'conversation_id']
+                                # fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'reacted_by',
+                                #               'reacted_with']
+                                messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|',
+                                                           quoting=csv.QUOTE_MINIMAL)
                                 messagewriter.writerow(fieldnames)
-                                # TODO falta as reações
                                 for m in arrayMensagens:
+                                    messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID])
                                     if len(m.files) > 0:
-                                        for f in m.files:
-                                            messagewriter.writerow([m.message, m.time, m.sender, f.nome, f.local])
-                                    else:
-                                        messagewriter.writerow([m.message, m.time, m.sender, 'NA', 'NA'])
+                                        dictFiles[idMessage] = m.files
+                                    if len(m.reactions) > 0:
+                                        dictReacts[idMessage] = m.reactions
+                                    idMessage += 1
                                 csvfile.close()
+
+                            with open(os.path.join(pathToAutopsy, 'Files.csv'), 'a+', newline='',
+                                      encoding="utf-8") as csvfile:
+                                fieldnames = ['messageID', 'file_name', 'file_url']
+                                # fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'reacted_by',
+                                #               'reacted_with']
+                                messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|',
+                                                           quoting=csv.QUOTE_MINIMAL)
+                                messagewriter.writerow(fieldnames)
+                                for key, value in dictFiles.items():
+                                    for f in value:
+                                        messagewriter.writerow([str(key), f.nome, f.local])
+                                csvfile.close()
+
+                            with open(os.path.join(pathToAutopsy, 'Reacts.csv'), 'a+', newline='',
+                                      encoding="utf-8") as csvfile:
+                                fieldnames = ['messageID', 'reacted_with', 'reacted_by', 'react_time']
+                                # fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'reacted_by',
+                                #               'reacted_with']
+                                messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|',
+                                                           quoting=csv.QUOTE_MINIMAL)
+                                messagewriter.writerow(fieldnames)
+                                for key, value in dictReacts.items():
+                                    for r in value:
+                                        if r.orgid in arrayContactos:
+                                            c = arrayContactos.get(r.orgid)
+                                        else:
+                                            c = Contacto(orgid=r.orgid)
+                                        messagewriter.writerow([str(key), r.emoji, c.nome, r.time])
+                                csvfile.close()
+                            dictFiles.clear()
+                            dictReacts.clear()
                             arrayMensagens.clear()
                             with open(os.path.join(pathMulti, 'EventCall.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
@@ -1140,7 +1167,7 @@ if __name__ == "__main__":
                                             c = arrayContactos.get(oID)
                                         else:
                                             c = Contacto('Desc....', 'Desc.', oID)
-                                        print(call.toString())
+
                                         callwriter.writerow(
                                             [call.calldate, call.creator.nome, call.creator.email, call.count, c.nome,
                                              c.email])
@@ -1177,6 +1204,7 @@ if __name__ == "__main__":
                                 csvfile.close()
         elif opt in ("-a", "--autopsy"):
             # -a https_teams.microsoft.com_0.indexeddb.leveldb
+            idMessage = 1
             levelDBPath = projetoEIAppDataPath + "\\" + arg
             pathToAutopsy = projetoEIAppDataPath + "\\Analise Autopsy {}".format(str(current_milli_time()))
             if not os.path.exists(projetoEIAppDataPath):
@@ -1213,50 +1241,44 @@ if __name__ == "__main__":
                 csvfile.close()
 
             with open(os.path.join(pathToAutopsy, 'Mensagens.csv'), 'a+', newline='', encoding="utf-8") as csvfile:
-                fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'conversation_id', 'reacted_by',
-                              'reacted_with']
-                messagewriter = csv.writer(csvfile, delimiter=';',
-                                           quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                fieldnames = ['messageID', 'message', 'time', 'sender', 'conversation_id']
+                # fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'reacted_by',
+                #               'reacted_with']
+                messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 messagewriter.writerow(fieldnames)
-                row = []
-                countFiles = 0
-                hasFiles = False
-                hasReactions = False
-                # TODO falta as reações
                 for m in arrayMensagens:
-                    row.append(m.message)
-                    row.append(m.time)
-                    row.append(m.sender)
+                    messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID])
                     if len(m.files) > 0:
-                        hasFiles = True
+                        dictFiles[idMessage] = m.files
                     if len(m.reactions) > 0:
-                        hasReactions = True
+                        dictReacts[idMessage] = m.reactions
+                    idMessage += 1
+                csvfile.close()
 
-                    if hasFiles:
-                        while countFiles < len(m.files):
-                            row.append(m.files[countFiles].nome)
-                            row.append(m.files[countFiles].local)
-                            if hasReactions:
-                                for r in m.reactions:
-                                    row.append(r.orgid)
-                                    row.append(r.emoji)
-                            else:
-                                row.append("NA")
-                                row.append("NA")
-                            messagewriter.writerow(row)
-                            countFiles += 1
-                    else:
-                        if hasReactions:
-                            for r in m.reactions:
-                                row.append(r.orgid)
-                                row.append(r.emoji)
+            with open(os.path.join(pathToAutopsy, 'Files.csv'), 'a+', newline='', encoding="utf-8") as csvfile:
+                fieldnames = ['messageID', 'file_name', 'file_url']
+                # fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'reacted_by',
+                #               'reacted_with']
+                messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                messagewriter.writerow(fieldnames)
+                for key, value in dictFiles.items():
+                    for f in value:
+                        messagewriter.writerow([str(key), f.nome, f.local])
+                csvfile.close()
+
+            with open(os.path.join(pathToAutopsy, 'Reacts.csv'), 'a+', newline='', encoding="utf-8") as csvfile:
+                fieldnames = ['messageID', 'reacted_with', 'reacted_by', 'react_time']
+                # fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'reacted_by',
+                #               'reacted_with']
+                messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                messagewriter.writerow(fieldnames)
+                for key, value in dictReacts.items():
+                    for r in value:
+                        if r.orgid in arrayContactos:
+                            c = arrayContactos.get(r.orgid)
                         else:
-                            row.append("NA")
-                            row.append("NA")
-                        messagewriter.writerow(row)
-                    row.clear()
-                    hasFiles = False
-                    hasReactions = False
+                            c = Contacto(orgid=r.orgid)
+                        messagewriter.writerow([str(key), r.emoji, c.nome, r.time])
                 csvfile.close()
 
             with open(os.path.join(pathToAutopsy, 'EventCall.csv'), 'a+', newline='',

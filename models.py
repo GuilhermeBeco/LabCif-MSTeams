@@ -22,12 +22,11 @@ class MensagemCompleta:
 
     def toString(self):
         return "Message: {0} || Time: {1} || Sender: {2} || IsMention: {3} || Mention: {4} || HasEmoji: {5} || " \
-               "hasFiles:{6} || hasReactions:{7} || cvID:{8}".format(
-            self.message,
-            self.time,
-            self.sender,
-            str(self.isMention),
-            self.mention, str(self.hasEmoji), str(len(self.files)), str(len(self.reactions)), self.cvID)
+               "hasFiles:{6} || hasReactions:{7} || cvID:{8}".format(self.message, self.time, self.sender,
+                                                                     str(self.isMention),
+                                                                     self.mention, str(self.hasEmoji),
+                                                                     str(len(self.files)), str(len(self.reactions)),
+                                                                     self.cvID)
 
 
 class Contacto:
@@ -87,15 +86,7 @@ class EventCall:
         self.orgids = orgids
 
     def toString(self):
-        return "Data: " + self.calldate + " (UTC) || Criador da chamada: " + self.creator.toString() + " || Numero de participantes: " + self.count + " || Duração da chamada (mins): " + self.duration + " || Nomes dos participantes: " + ', '.join(self.participants) + " || Orgids: " + ', '.join(self.orgids)
-
-
-class ConversationCreationDetails:
-    def __init__(self, conversation_id, date, creator, members):
-        self.conversation_id = conversation_id
-        self.date = date
-        self.creator = creator
-        self.members = members
-
-    def toString(self):
-        return "CONVERSATION: {0} ||| DATE: {1} ||| CREATOR: {2} ||| MEMBERS: {3}".format(self.conversation_id, self.date, self.creator, self.members)
+        return "Data: " + self.calldate + " (UTC) || Criador da chamada: " + self.creator.toString() + "|| Numero de " \
+                                                                                                       "participantes: " + self.count + " || Duração da chamada (mins): " + self.duration + "|| Nomes dos " \
+                                                                                                                                                                                            "participantes: " + ', '.join(
+            self.participants) + " || Orgids: " + ', '.join(self.orgids)
