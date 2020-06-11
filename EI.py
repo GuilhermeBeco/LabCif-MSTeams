@@ -33,6 +33,8 @@ arrayUsers = []
 dictFiles = {}
 dictReacts = {}
 
+pathModule = ""
+
 
 def find(pt, path):
     fls = []
@@ -92,8 +94,7 @@ def testeldb(path, pathArmazenamento):
     import ast
     for f in os.listdir(path):
         if f.endswith(".ldb") and os.path.getsize(path + "\\" + f) > 0:
-            wd = os.getcwd()
-            process = Popen([os.path.join(wd, r"ldbdump"), os.path.join(path, f)], stdout=PIPE)
+            process = Popen(["{}ldbdump".format(pathModule), os.path.join(path, f)], stdout=PIPE)
             (output, err) = process.communicate()
             try:
                 result = output.decode("utf-8")
@@ -117,7 +118,8 @@ def writelog(path, pathArmazenamento):
 def crialogtotal(pathArmazenamento):
     # os.system(r'cmd /c "LDBReader\PrjTeam.exe"')
     logFinal = open(os.path.join(pathArmazenamento, "logTotal.txt"), "a+", encoding="utf-8")
-    os.system('cmd /c "LevelDBReader\eiTeste.exe "{0}" "{1}"'.format(levelDBPath, pathArmazenamento))
+    os.system('cmd /c "{}LevelDBReader\\eiTeste.exe "{}" "{}"'.format(pathModule, levelDBPath, pathArmazenamento))
+    print(pathModule)
     testeldb(levelDBPath + "\\lost", pathArmazenamento)
     logLost = find(".log", levelDBPath + "\\lost")
     writelog(os.path.join(pathArmazenamento, "logIndexedDB.txt"), pathArmazenamento)
@@ -300,6 +302,52 @@ def criacaoDeEquipas(pathArmazenamento):
     # fechar ficheiros
     logFinalRead.close()
     logTeamsCreation.close()
+
+
+def cleanMessage(message):
+    p = ""
+    span = ""
+    r = ""
+    while True:
+        m = list(message)
+        indexP = message.find("<p")
+        indexPFinal = message.find(">", indexP)
+        indexSpan = message.find("<span")
+        indexspanFinal = message.find(">", indexSpan)
+
+        if indexP == -1 and indexSpan == -1:
+            break
+        if indexP != -1:
+            for x in range(indexP, indexPFinal + 1):
+                p += m[x]
+
+        if indexSpan != -1:
+            for x in range(indexSpan, indexspanFinal + 1):
+                span += m[x]
+        # print(span)
+        message = message.replace(p, "")
+        message = message.replace(span, "")
+        p = ""
+        span = ""
+
+    indexRich = message.find("RichText")
+    if indexRich != -1:
+        indexRichFinal = message.find("contentc", indexRich)
+        for x in range(indexRich, indexRichFinal + 9):
+            r += m[x]
+        message = message.replace(r, "")
+    message = message.replace("<﻿Ø﻿û﻿ß", "")
+    message = message.replace(r"/n", "")
+    message = message.replace("<strong>", "")
+    message = message.replace("</strong>", "")
+    message = message.replace("<em>", "")
+    message = message.replace("</em>", "")
+    message = message.replace("</span>", "")
+    message = message.replace("</pre>", "")
+    message = message.replace("<code>", "")
+    message = message.replace("</code>", "")
+
+    return message
 
 
 def criarObjetosDeCriacaoDeEquipas(pathArmazenamento):
@@ -506,9 +554,9 @@ def criarObjetosDeCriacaoDeEquipas(pathArmazenamento):
 
 def filtro(buffer):
     filtros = {
-        "trimmedMessageContent": 0,
-        "renderContent": 0,
-        "skypeguid": 0
+        "messageStorageState": 0,
+        "parentMessageId": 0,
+        "composetime": 0
     }
     sender = ""
     time = ""
@@ -540,11 +588,15 @@ def filtro(buffer):
         for line in buffer:
             if filter in line:
                 filtros[filter] = 1
-    for x in filtros.values():
+    for y, x in filtros.items():
         if x == 0:
+            if buffer.__len__() > 0:
+                print(y)
+                print(str(buffer))
+                print("----------------------------")
             ok = 0
-
     if ok:
+
         isMention = False
         mention = ""
         orgid = ""
@@ -644,6 +696,21 @@ def filtro(buffer):
                             st = st.replace(span, " " + linkEmoji.format(emoji) + " ")
                             st = st.replace(r"\n", "")
                             richHtml = st
+                if "https://statics.teams.cdn.office.net/evergreen-assets/emojioneassets/" in richHtml:
+                    indexEmojione = richHtml.find("<img")
+                    indexEmojioneFinal = richHtml.find("/>", indexEmojione)
+                    l = list(richHtml)
+                    emojiReplace = ""
+                    for x in range(indexEmojione, indexEmojioneFinal + 2):
+                        emojiReplace += l[x]
+                    indexLinkEmoji = emojiReplace.find("src")
+                    indexLinkEmojiFinal = emojiReplace.find("width", indexLinkEmoji)
+                    emojiOne = ""
+                    le = list(emojiReplace)
+                    for x in range(indexLinkEmoji + 5, indexLinkEmojiFinal - 3):
+                        emojiOne += le[x]
+                    richHtml = richHtml.replace(emojiReplace, emojiOne)
+                    richHtml = richHtml[richHtml.find(r"\n"):richHtml.__len__()]
                 if "http://schema.skype.com/Mention" in richHtml:
                     indexMencionado = 0
                     span = ""
@@ -859,14 +926,14 @@ def filtro(buffer):
                 dtStart = zulu.parse(start)
                 callstart = datetime.utcfromtimestamp(dtStart.timestamp())
                 callstart = callstart.astimezone(tz=tz.tzlocal())
-                dtEnd = zulu.parse(start)
+                dtEnd = zulu.parse(end)
                 callEnd = datetime.utcfromtimestamp(dtEnd.timestamp())
                 callEnd = callstart.astimezone(tz=tz.tzlocal())
 
                 chamada = Chamada(contactoOriginator, str(callstart), str(callEnd), contactoTarget, state)
                 arrayCallOneToOne.append(chamada)
 
-            if isReacaoChunk and "ams_referencesa" in line:
+            if isReacaoChunk and "ams_references" in line:
                 isReacaoChunk = False
                 reacaoChunkReady = True
 
@@ -905,6 +972,7 @@ def filtro(buffer):
                         reaction.orgid = orgidReact
                         reaction.emoji = emojiReaction
                         reaction.time = timeReaction
+                        print(reaction.toString())
                         arrayReacoes.append(reaction)
 
                         orgidReact = ""
@@ -923,16 +991,17 @@ def filtro(buffer):
                         adptiveCard = False
                     mensagem = MensagemCompleta()
                     mensagem.mention = mention
-                    mensagem.message = message
+                    mensagem.message = cleanMessage(message)
                     mensagem.time = time
                     mensagem.sender = sender
 
                     mensagem.cvID = cvId
                     mensagem.reactions = arrayReacoes
                     mensagem.files = files
+
+                    # print(mensagem.message)
                     arrayMensagens.append(mensagem)
                     hasFiles = False
-
 
 
 def findpadrao(pathArmazenanto):
@@ -944,6 +1013,7 @@ def findpadrao(pathArmazenanto):
     buffer = []
     ready = False
     while line := logFinalRead.readline():
+        # print(ready)
         if flagMgs == 1:
             buffer.append(line)
         if "RichText/Html" in line:
@@ -955,10 +1025,9 @@ def findpadrao(pathArmazenanto):
                 flagMgs = 1
                 toCompare = True
                 buffer.append(line)
-        if "pinnedTime_" in line:
+        if "parentMessageId" in line:
             flagMgs = 0
             ready = True
-
         if "amsreferences" in line:
             toCompare = False
         if toCompare:
@@ -977,8 +1046,6 @@ def findpadrao(pathArmazenanto):
             stringBuffer = ""
         ready = False
     logFinalRead.close()
-
-    # logCall.close()
 
 
 def geraContactos(pathArmazenamento):
@@ -1040,19 +1107,25 @@ if __name__ == "__main__":
     current_milli_time = lambda: datetime.fromtimestamp(math.floor(time.time())).strftime("%m-%d-%Y, %Hh_%Mm_%Ss")
     dupped = False
     try:
-        opts, args = getopt.getopt(args, "hua:", ["users=", "autopsy="])
+        opts, args = getopt.getopt(args, "hpua:", ["users=", "autopsy=", "pathToEI="])
     except getopt.GetoptError:
         print('ei.py -u <pathToUsers> ')
         print("or")
         print('ei.py -a <pathToAppdataProjetoEI>')
         sys.exit(2)
     for opt, arg in opts:
+        if opt == "--pathToEI":
+            pathModule = arg
+            print(pathModule)
         if opt == '-h':
             print('ei.py -u <pathToUsers> ')
             print("or")
             print('ei.py -a <pathToAppdataProjetoEI>')
             sys.exit()
         elif opt in ("-u", "--users"):
+            pathModule = os.path.realpath(__file__)
+            indexCutPath = pathModule.rfind("\\")
+            pathModule = pathModule[0:indexCutPath + 1]
             print(arg)
             count = 0
             pathMulti = ""
@@ -1075,7 +1148,7 @@ if __name__ == "__main__":
                                 else:
                                     print("Successfully created the directory %s " % projetoEIAppDataPath)
                             try:
-                                pathMulti = projetoEIAppDataPath + " Analise standalone {}".format(
+                                pathMulti = projetoEIAppDataPath + "Analise standalone {}".format(
                                     current_milli_time()) + "\\"
                                 os.mkdir(pathMulti)
                             except OSError:
@@ -1092,8 +1165,9 @@ if __name__ == "__main__":
 
                             extrairEventCallsToFile(pathMulti)
                             criarObjetosDeEventCalls(pathMulti)
-
+                            idMessage = 0
                             findpadrao(pathMulti)
+                            print("hallooooooo")
                             with open(os.path.join(pathMulti, 'Contactos.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['nome', 'email', 'orgid']
@@ -1104,7 +1178,7 @@ if __name__ == "__main__":
                                     messagewriter.writerow([value.nome, value.email, value.orgid])
                                 csvfile.close()
                             arrayContactos.clear()
-                            with open(os.path.join(pathToAutopsy, 'Mensagens.csv'), 'a+', newline='',
+                            with open(os.path.join(pathMulti, 'Mensagens.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['messageID', 'message', 'time', 'sender', 'conversation_id']
                                 # fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'reacted_by',
@@ -1113,6 +1187,7 @@ if __name__ == "__main__":
                                                            quoting=csv.QUOTE_MINIMAL)
                                 messagewriter.writerow(fieldnames)
                                 for m in arrayMensagens:
+                                    m.message = m.message.replace(";", "(semicolon)")
                                     messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID])
                                     if len(m.files) > 0:
                                         dictFiles[idMessage] = m.files
@@ -1121,7 +1196,7 @@ if __name__ == "__main__":
                                     idMessage += 1
                                 csvfile.close()
 
-                            with open(os.path.join(pathToAutopsy, 'Files.csv'), 'a+', newline='',
+                            with open(os.path.join(pathMulti, 'Files.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['messageID', 'file_name', 'file_url']
                                 # fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'reacted_by',
@@ -1134,7 +1209,7 @@ if __name__ == "__main__":
                                         messagewriter.writerow([str(key), f.nome, f.local])
                                 csvfile.close()
 
-                            with open(os.path.join(pathToAutopsy, 'Reacts.csv'), 'a+', newline='',
+                            with open(os.path.join(pathMulti, 'Reacts.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['messageID', 'reacted_with', 'reacted_by', 'react_time']
                                 # fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'reacted_by',
@@ -1203,8 +1278,11 @@ if __name__ == "__main__":
                                          ch.presente.email, ch.state])
                                 csvfile.close()
         elif opt in ("-a", "--autopsy"):
+            # if pathModule == "":
+            #     print("need -p")
             # -a https_teams.microsoft.com_0.indexeddb.leveldb
             idMessage = 1
+            print(arg)
             levelDBPath = projetoEIAppDataPath + "\\" + arg
             pathToAutopsy = projetoEIAppDataPath + "\\Analise Autopsy {}".format(str(current_milli_time()))
             if not os.path.exists(projetoEIAppDataPath):
@@ -1245,8 +1323,10 @@ if __name__ == "__main__":
                 # fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'reacted_by',
                 #               'reacted_with']
                 messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                # problema com o delimitador ser ;
                 messagewriter.writerow(fieldnames)
                 for m in arrayMensagens:
+                    m.message = m.message.replace(";", "(semicolon)")
                     messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID])
                     if len(m.files) > 0:
                         dictFiles[idMessage] = m.files
