@@ -1111,7 +1111,7 @@ if __name__ == "__main__":
     except getopt.GetoptError:
         print('ei.py -u <pathToUsers> ')
         print("or")
-        print('ei.py -a <pathToAppdataProjetoEI>')
+        print('ei.py --pathToEI <pathToEIFolder> -a <LDBFolderNameInProjetoEIAppData>')
         sys.exit(2)
     for opt, arg in opts:
         if opt == "--pathToEI":
@@ -1120,7 +1120,7 @@ if __name__ == "__main__":
         if opt == '-h':
             print('ei.py -u <pathToUsers> ')
             print("or")
-            print('ei.py -a <pathToAppdataProjetoEI>')
+            print('ei.py --pathToEI <pathToEIFolder> -a <LDBFolderNameInProjetoEIAppData>')
             sys.exit()
         elif opt in ("-u", "--users"):
             pathModule = os.path.realpath(__file__)
@@ -1165,7 +1165,7 @@ if __name__ == "__main__":
 
                             extrairEventCallsToFile(pathMulti)
                             criarObjetosDeEventCalls(pathMulti)
-                            idMessage = 0
+                            idMessage = 1
                             findpadrao(pathMulti)
                             print("hallooooooo")
                             with open(os.path.join(pathMulti, 'Contactos.csv'), 'a+', newline='',
@@ -1278,9 +1278,8 @@ if __name__ == "__main__":
                                          ch.presente.email, ch.state])
                                 csvfile.close()
         elif opt in ("-a", "--autopsy"):
-            # if pathModule == "":
-            #     print("need -p")
-            # -a https_teams.microsoft.com_0.indexeddb.leveldb
+            if pathModule == "":
+                sys.exit('ei.py --pathToEI <pathToEIFolder> -a <LDBFolderNameInProjetoEIAppData>')
             idMessage = 1
             print(arg)
             levelDBPath = projetoEIAppDataPath + "\\" + arg
