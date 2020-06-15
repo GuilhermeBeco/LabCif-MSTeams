@@ -1391,7 +1391,7 @@ if __name__ == "__main__":
                             [value.conversation_id, value.date, value.creator.nome, value.creator.email, member.nome,
                              member.email, user])
                 csvfile.close()
-
+            #TODO fix sender fix datecall e converter a react time para data
             with open(os.path.join(pathToAutopsy, 'CallOneToOne.csv'), 'a+', newline='',
                       encoding="utf-8") as csvfile:
                 fieldnames = ['originator_name', 'originator_email', 'time_start', 'time_finish', 'target_nome',
