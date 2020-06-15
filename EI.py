@@ -1159,6 +1159,8 @@ if __name__ == "__main__":
                             if name == user:
                                 dupped = True
                         if not dupped:
+                            pathSplited = os.path.join(root, name).split("/")
+                            user=pathSplited[2]
                             arrayUsers.append(os.path.join(root, name))
                             levelDBPath = os.path.join(root, name)
                             dupped = False
@@ -1170,7 +1172,7 @@ if __name__ == "__main__":
                                 else:
                                     print("Successfully created the directory %s " % projetoEIAppDataPath)
                             try:
-                                pathMulti = projetoEIAppDataPath + "Analise standalone {}".format(
+                                pathMulti = projetoEIAppDataPath + "Analise standalone {} {}".format(user,
                                     current_milli_time()) + "\\"
                                 os.mkdir(pathMulti)
                             except OSError:
@@ -1301,7 +1303,9 @@ if __name__ == "__main__":
             idMessage = 1
             print(arg)
             levelDBPath = projetoEIAppDataPath + "\\" + arg
-            pathToAutopsy = projetoEIAppDataPath + "\\Analise Autopsy {}".format(str(current_milli_time()))
+            pathSplited = arg.split("_")
+            user = pathSplited[3]
+            pathToAutopsy = projetoEIAppDataPath + "\\Analise Autopsy {} {}".format(user,str(current_milli_time()))
             if not os.path.exists(projetoEIAppDataPath):
                 try:
                     os.mkdir(projetoEIAppDataPath)
