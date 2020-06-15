@@ -1160,7 +1160,7 @@ if __name__ == "__main__":
                                 dupped = True
                         if not dupped:
                             pathSplited = os.path.join(root, name).split("/")
-                            user=pathSplited[2]
+                            user = pathSplited[2]
                             arrayUsers.append(os.path.join(root, name))
                             levelDBPath = os.path.join(root, name)
                             dupped = False
@@ -1173,7 +1173,7 @@ if __name__ == "__main__":
                                     print("Successfully created the directory %s " % projetoEIAppDataPath)
                             try:
                                 pathMulti = projetoEIAppDataPath + "Analise standalone {} {}".format(user,
-                                    current_milli_time()) + "\\"
+                                                                                                     current_milli_time()) + "\\"
                                 os.mkdir(pathMulti)
                             except OSError:
                                 print("Creation of the directory %s failed" % pathMulti)
@@ -1194,25 +1194,23 @@ if __name__ == "__main__":
                             print("hallooooooo")
                             with open(os.path.join(pathMulti, 'Contactos.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
-                                fieldnames = ['nome', 'email', 'orgid']
+                                fieldnames = ['nome', 'email', 'orgid''user']
                                 messagewriter = csv.writer(csvfile, delimiter=';',
                                                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
                                 messagewriter.writerow(fieldnames)
                                 for key, value in arrayContactos.items():
-                                    messagewriter.writerow([value.nome, value.email, value.orgid])
+                                    messagewriter.writerow([value.nome, value.email, value.orgid, user])
                                 csvfile.close()
                             arrayContactos.clear()
                             with open(os.path.join(pathMulti, 'Mensagens.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
-                                fieldnames = ['messageID', 'message', 'time', 'sender', 'conversation_id']
-                                # fieldnames = ['message', 'time', 'sender', 'file_name', 'file_url', 'reacted_by',
-                                #               'reacted_with']
+                                fieldnames = ['messageID', 'message', 'time', 'sender', 'conversation_id', 'user']
                                 messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|',
                                                            quoting=csv.QUOTE_MINIMAL)
                                 messagewriter.writerow(fieldnames)
                                 for m in arrayMensagens:
                                     m.message = m.message.replace(";", "(semicolon)")
-                                    messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID])
+                                    messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID, user])
                                     if len(m.files) > 0:
                                         dictFiles[idMessage] = m.files
                                     if len(m.reactions) > 0:
@@ -1222,13 +1220,13 @@ if __name__ == "__main__":
 
                             with open(os.path.join(pathMulti, 'Files.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
-                                fieldnames = ['messageID', 'file_name', 'file_url']
+                                fieldnames = ['messageID', 'file_name', 'file_url', 'user']
                                 messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|',
                                                            quoting=csv.QUOTE_MINIMAL)
                                 messagewriter.writerow(fieldnames)
                                 for key, value in dictFiles.items():
                                     for f in value:
-                                        messagewriter.writerow([str(key), f.nome, f.local])
+                                        messagewriter.writerow([str(key), f.nome, f.local, 'user'])
                                 csvfile.close()
 
                             # with open(os.path.join(pathMulti, 'Reacts.csv'), 'a+', newline='',
@@ -1251,8 +1249,7 @@ if __name__ == "__main__":
                             with open(os.path.join(pathMulti, 'EventCall.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['calldate', 'creator_name', 'creator_email', 'count', 'duration',
-                                              'participant_name',
-                                              'participant_email']
+                                              'participant_name', 'participant_email', 'user']
                                 callwriter = csv.writer(csvfile, delimiter=';',
                                                         quotechar='|', quoting=csv.QUOTE_MINIMAL)
                                 callwriter.writerow(fieldnames)
@@ -1265,13 +1262,13 @@ if __name__ == "__main__":
 
                                         callwriter.writerow(
                                             [call.calldate, call.creator.nome, call.creator.email, call.count, c.nome,
-                                             c.email])
+                                             c.email, user])
                                 csvfile.close()
                             arrayEventCall.clear()
                             with open(os.path.join(pathMulti, 'Conversations.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['conversation_ID', 'date', 'nome_creator', 'email_creator', 'member_name',
-                                              'member_email']
+                                              'member_email', 'user']
                                 callwriter = csv.writer(csvfile, delimiter=';',
                                                         quotechar='|', quoting=csv.QUOTE_MINIMAL)
                                 callwriter.writerow(fieldnames)
@@ -1279,23 +1276,20 @@ if __name__ == "__main__":
                                     for member in value.members:
                                         callwriter.writerow(
                                             [value.conversation_id, value.date, value.creator.nome, value.creator.email,
-                                             member.nome,
-                                             member.email])
+                                             member.nome, member.email, user])
                                 csvfile.close()
                             dictionaryConversationDetails.clear()
                             with open(os.path.join(pathMulti, 'CallOneToOne.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['originator_name', 'originator_email', 'time_start', 'time_finish',
-                                              'target_nome',
-                                              'target_email', 'state']
+                                              'target_nome', 'target_email', 'state', 'user']
                                 callwriter = csv.writer(csvfile, delimiter=';', quotechar='|',
                                                         quoting=csv.QUOTE_MINIMAL)
                                 callwriter.writerow(fieldnames)
                                 for ch in arrayCallOneToOne:
                                     callwriter.writerow(
                                         [ch.criador.nome, ch.criador.email, ch.timestart, ch.timefinish,
-                                         ch.presente.nome,
-                                         ch.presente.email, ch.state])
+                                         ch.presente.nome, ch.presente.email, ch.state, user])
                                 csvfile.close()
         elif opt in ("-a", "--autopsy"):
             if pathModule == "":
@@ -1305,7 +1299,7 @@ if __name__ == "__main__":
             levelDBPath = projetoEIAppDataPath + "\\" + arg
             pathSplited = arg.split("_")
             user = pathSplited[3]
-            pathToAutopsy = projetoEIAppDataPath + "\\Analise Autopsy {} {}".format(user,str(current_milli_time()))
+            pathToAutopsy = projetoEIAppDataPath + "\\Analise Autopsy {} {}".format(user, str(current_milli_time()))
             if not os.path.exists(projetoEIAppDataPath):
                 try:
                     os.mkdir(projetoEIAppDataPath)
@@ -1331,21 +1325,21 @@ if __name__ == "__main__":
             findpadrao(pathToAutopsy)
 
             with open(os.path.join(pathToAutopsy, 'Contactos.csv'), 'a+', newline='', encoding="utf-8") as csvfile:
-                fieldnames = ['nome', 'email', 'orgid']
+                fieldnames = ['nome', 'email', 'orgid', 'user']
                 messagewriter = csv.writer(csvfile, delimiter=';',
                                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 messagewriter.writerow(fieldnames)
                 for key, value in arrayContactos.items():
-                    messagewriter.writerow([value.nome, value.email, value.orgid])
+                    messagewriter.writerow([value.nome, value.email, value.orgid, user])
                 csvfile.close()
 
             with open(os.path.join(pathToAutopsy, 'Mensagens.csv'), 'a+', newline='', encoding="utf-8") as csvfile:
-                fieldnames = ['messageID', 'message', 'time', 'sender', 'conversation_id']
+                fieldnames = ['messageID', 'message', 'time', 'sender', 'conversation_id', 'user']
                 messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 messagewriter.writerow(fieldnames)
                 for m in arrayMensagens:
                     m.message = m.message.replace(";", "(semicolon)")
-                    messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID])
+                    messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID, user])
                     if len(m.files) > 0:
                         dictFiles[idMessage] = m.files
                     # if len(m.reactions) > 0:
@@ -1358,20 +1352,18 @@ if __name__ == "__main__":
                 csvfile.close()
 
             with open(os.path.join(pathToAutopsy, 'Files.csv'), 'a+', newline='', encoding="utf-8") as csvfile:
-                fieldnames = ['messageID', 'file_name', 'file_url']
+                fieldnames = ['messageID', 'file_name', 'file_url', 'user']
                 messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 messagewriter.writerow(fieldnames)
                 for key, value in dictFiles.items():
                     for f in value:
-                        messagewriter.writerow([str(key), f.nome, f.local])
+                        messagewriter.writerow([str(key), f.nome, f.local, user])
                 csvfile.close()
-
-
 
             with open(os.path.join(pathToAutopsy, 'EventCall.csv'), 'a+', newline='',
                       encoding="utf-8") as csvfile:
                 fieldnames = ['calldate', 'creator_name', 'creator_email', 'count', 'duration', 'participant_name',
-                              'participant_email']
+                              'participant_email', 'user']
                 callwriter = csv.writer(csvfile, delimiter=';',
                                         quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 callwriter.writerow(fieldnames)
@@ -1383,13 +1375,13 @@ if __name__ == "__main__":
                             c = Contacto('Desc.', 'Desc.', oID)
                         callwriter.writerow(
                             [call.calldate, call.creator.nome, call.creator.email, call.count, str(call.duration),
-                             c.nome, c.email])
+                             c.nome, c.email, user])
                 csvfile.close()
 
             with open(os.path.join(pathToAutopsy, 'Conversations.csv'), 'a+', newline='',
                       encoding="utf-8") as csvfile:
                 fieldnames = ['conversation_ID', 'date', 'nome_creator', 'email_creator', 'member_name',
-                              'member_email']
+                              'member_email', 'user']
                 callwriter = csv.writer(csvfile, delimiter=';',
                                         quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 callwriter.writerow(fieldnames)
@@ -1397,18 +1389,18 @@ if __name__ == "__main__":
                     for member in value.members:
                         callwriter.writerow(
                             [value.conversation_id, value.date, value.creator.nome, value.creator.email, member.nome,
-                             member.email])
+                             member.email, user])
                 csvfile.close()
 
             with open(os.path.join(pathToAutopsy, 'CallOneToOne.csv'), 'a+', newline='',
                       encoding="utf-8") as csvfile:
                 fieldnames = ['originator_name', 'originator_email', 'time_start', 'time_finish', 'target_nome',
-                              'target_email', 'state']
+                              'target_email', 'state', 'user']
                 callwriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 callwriter.writerow(fieldnames)
                 for ch in arrayCallOneToOne:
                     callwriter.writerow(
                         [ch.criador.nome, ch.criador.email, ch.timestart, ch.timefinish, ch.presente.nome,
-                         ch.presente.email, ch.state])
+                         ch.presente.email, ch.state, user])
                 csvfile.close()
             print("hiiii")
