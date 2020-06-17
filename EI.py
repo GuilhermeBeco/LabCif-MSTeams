@@ -122,7 +122,6 @@ def crialogtotal(pathArmazenamento):
     # os.system(r'cmd /c "LDBReader\PrjTeam.exe"')
     logFinal = open(os.path.join(pathArmazenamento, "logTotal.txt"), "a+", encoding="utf-8")
     os.system('cmd /c "{}LevelDBReader\\eiTeste.exe "{}" "{}"'.format(pathModule, levelDBPath, pathArmazenamento))
-    print(pathModule)
     testeldb(levelDBPath + "\\lost", pathArmazenamento)
     logLost = find(".log", levelDBPath + "\\lost")
     writelog(os.path.join(pathArmazenamento, "logIndexedDB.txt"), pathArmazenamento)
@@ -590,6 +589,7 @@ def filtro(buffer):
     link = ""
     hrefLink = ""
     nAspas = False
+    pathReacts = ""
 
     for filter in filtros:
         for line in buffer:
@@ -622,18 +622,11 @@ def filtro(buffer):
                     cvId += l[x]
             if "imdisplayname" in line:
                 indexTexto = line.find("imdisplayname")
-                indexTextoFinal = line.find("skypeguid")
+                indexTextoFinal = line.find("\"", indexTexto + 16)
                 l = list(line)
-                for x in range(indexTexto, indexTextoFinal):
-                    if "\"" in l[x]:
-                        nAspas = not nAspas
-                        continue
-                    if nAspas:
-                        name = name + l[x + 1]
-                name = name.replace("\"", "")
+                for x in range(indexTexto + 15, indexTextoFinal):
+                    name += l[x]
                 sender = name
-                nAspas = False
-                nome = sender
             name = ""
 
             if "creator" in line:
@@ -911,7 +904,6 @@ def filtro(buffer):
                     originator += l[x]
                 for x in range(indexTarget + 17, indexTargetFinal - 3):
                     target += l[x]
-
                 if originator in arrayContactos:
                     contactoOriginator = arrayContactos.get(originator)
                 else:
@@ -935,8 +927,7 @@ def filtro(buffer):
                 callstart = callstart.astimezone(tz=tz.tzlocal())
                 dtEnd = zulu.parse(end)
                 callEnd = datetime.utcfromtimestamp(dtEnd.timestamp())
-                callEnd = callstart.astimezone(tz=tz.tzlocal())
-
+                callEnd = callEnd.astimezone(tz=tz.tzlocal())
                 chamada = Chamada(contactoOriginator, str(callstart), str(callEnd), contactoTarget, state)
                 arrayCallOneToOne.append(chamada)
 
@@ -978,8 +969,13 @@ def filtro(buffer):
                             print("")
                         reaction.orgid = orgidReact
                         reaction.emoji = emojiReaction
-                        reaction.time = timeReaction
-                        # print(reaction.toString())
+                        try:
+                            tr = datetime.utcfromtimestamp(float(timeReaction) / 1000.0)
+                            tr = tr.astimezone(tz=tz.tzlocal())
+                            reaction.time = str(tr)
+                        except Exception:
+                            reaction.time = str(timeReaction)
+
                         arrayReacoes.append(reaction)
 
                         orgidReact = ""
@@ -1004,7 +1000,15 @@ def filtro(buffer):
                     mensagem.cvID = cvId
                     if arrayReacoes.__len__() > 0:
                         mensagem.reactions = arrayReacoes
-                        with open(os.path.join(pathToAutopsy, 'Reacts.csv'), 'a+', newline='',
+                        print(pathMulti)
+                        try:
+                            pathToAutopsy
+                        except NameError:
+                            pathReacts = pathMulti
+                        else:
+                            pathReacts = pathToAutopsy
+
+                        with open(os.path.join(pathReacts, 'Reacts.csv'), 'a+', newline='',
                                   encoding="utf-8") as csvfile:
                             fieldnames = ['messageID', 'reacted_with', 'reacted_by', 'react_time']
                             messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -1159,7 +1163,7 @@ if __name__ == "__main__":
                             if name == user:
                                 dupped = True
                         if not dupped:
-                            pathSplited = os.path.join(root, name).split("/")
+                            pathSplited = os.path.join(root, name).split("\\")
                             user = pathSplited[2]
                             arrayUsers.append(os.path.join(root, name))
                             levelDBPath = os.path.join(root, name)
@@ -1191,7 +1195,6 @@ if __name__ == "__main__":
                             criarObjetosDeEventCalls(pathMulti)
                             idMessage = 1
                             findpadrao(pathMulti)
-                            print("hallooooooo")
                             with open(os.path.join(pathMulti, 'Contactos.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['nome', 'email', 'orgid''user']
@@ -1228,23 +1231,7 @@ if __name__ == "__main__":
                                     for f in value:
                                         messagewriter.writerow([str(key), f.nome, f.local, 'user'])
                                 csvfile.close()
-
-                            # with open(os.path.join(pathMulti, 'Reacts.csv'), 'a+', newline='',
-                            #           encoding="utf-8") as csvfile:
-                            #     fieldnames = ['messageID', 'reacted_with', 'reacted_by', 'react_time']
-                            #     messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|',
-                            #                                quoting=csv.QUOTE_MINIMAL)
-                            #     messagewriter.writerow(fieldnames)
-                            #     for key, value in dictReacts.items():
-                            #         for r in value:
-                            #             if r.orgid in arrayContactos:
-                            #                 c = arrayContactos.get(r.orgid)
-                            #             else:
-                            #                 c = Contacto(orgid=r.orgid)
-                            #             messagewriter.writerow([str(key), r.emoji, c.nome, r.time])
-                            #     csvfile.close()
                             dictFiles.clear()
-                            # dictReacts.clear()
                             arrayMensagens.clear()
                             with open(os.path.join(pathMulti, 'EventCall.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
@@ -1391,7 +1378,6 @@ if __name__ == "__main__":
                             [value.conversation_id, value.date, value.creator.nome, value.creator.email, member.nome,
                              member.email, user])
                 csvfile.close()
-            #TODO fix sender fix datecall e converter a react time para data
             with open(os.path.join(pathToAutopsy, 'CallOneToOne.csv'), 'a+', newline='',
                       encoding="utf-8") as csvfile:
                 fieldnames = ['originator_name', 'originator_email', 'time_start', 'time_finish', 'target_nome',
@@ -1403,4 +1389,3 @@ if __name__ == "__main__":
                         [ch.criador.nome, ch.criador.email, ch.timestart, ch.timefinish, ch.presente.nome,
                          ch.presente.email, ch.state, user])
                 csvfile.close()
-            print("hiiii")
