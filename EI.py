@@ -1000,7 +1000,6 @@ def filtro(buffer):
                     mensagem.cvID = cvId
                     if arrayReacoes.__len__() > 0:
                         mensagem.reactions = arrayReacoes
-                        print(pathMulti)
                         try:
                             pathToAutopsy
                         except NameError:
