@@ -7,7 +7,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-
+import pandas as pd
 import zulu as zulu
 from dateutil.tz import tz
 
@@ -175,41 +175,43 @@ def criarObjetosDeEventCalls(pathArmazenamento):
     calldate = ""
     callcreator = ""
     c = Contacto()
+
     while line := logEventCalls.readline():
         marcador = 0
 
-        if "pinnedTime_" in line and calldate == "":
-            # ir buscar data da chamada
+        if "orgid:" in line and calldate == "":
 
-            indexcalldate = line.find("policyViolation")
+            # get the call end date
             indexcalldatefinal = line.find(",8:orgid")
+            indexcalldate = indexcalldatefinal - 13
+
             lista = list(line)
-            for i in range(indexcalldate + 20, indexcalldatefinal):
+            for i in range(indexcalldate, indexcalldatefinal - 3):
                 calldate = calldate + lista[i]
+
+
 
             # tentar converter timestamp para timezone UTC
             try:
                 calldate = int(calldate[:10])
                 calldate = datetime.utcfromtimestamp(calldate)
+                calldate = calldate.astimezone(tz=tz.tzlocal())
             except:
                 calldate = calldate
 
-            calldate = calldate.astimezone(tz=tz.tzlocal())
 
-            # ir buscar utilizador que iniciou a chamada
-
-            indexcallcreator = line.find("8:orgid:")
-            indexcallcreatorfinal = line.find("ackrequired_")
-
-            for i in range(indexcallcreator + 8, indexcallcreatorfinal - 3):
+            # get the user who started the call
+            indexcallcreator = line.find(",8:orgid:")
+            indexcallcreatorfinal = indexcallcreator + 9 + 36 # 36 is the number of chars in orgid
+            for i in range(indexcallcreator + 9, indexcallcreatorfinal):
                 callcreator = callcreator + lista[i]
 
-            # verficar se orgid existe na lista de contactos do utilizador
+            # check if orgid exists in the contacts list
             if callcreator in arrayContactos:
                 c = arrayContactos.get(callcreator)
             else:
-                oID = callcreator
-                c = Contacto('Desc.', 'Desc.', oID)
+                c = Contacto('Unknown', 'Unknown', callcreator)
+
         if "Event/Call" in line:
             # ir buscar numero total de participantes na chamada
             participantscount = ""
@@ -268,7 +270,9 @@ def criarObjetosDeEventCalls(pathArmazenamento):
             # criar novo objeto EventCall
             eventcall = EventCall(str(calldate), c, participantscount, callduration, participants, orgids)
             arrayEventCall.append(eventcall)
-            # escrever para log
+
+            calldate = ""
+            callcreator = ""
 
     # fechar ficheiros
     logEventCalls.close()
@@ -286,20 +290,22 @@ def criacaoDeEquipas(pathArmazenamento):
     # ler cada linha do ficheiro logTotal e procurar "<addmember>"
     while line := logFinalRead.readline():
 
-        if flagWrite == 1:
-            logTeamsCreation.write(line)
-        if "<addmember>" in line and count:  # inicio de nova informação de criacao de equipa # ThreadActivity/AddMember
+        if "messageso" in line and "<addmember>" in line and "<eventtime>" in line and "<initiator>" in line and count:  # inicio de nova informação de criacao de equipa # ThreadActivity/AddMember
             flagWrite = 1
             count = 0
             logTeamsCreation.write(line)
-        if "_emailDetails_" in line and flagWrite == 1:  # fim da informação
-            logTeamsCreation.write(line)
+            continue
+        if "_emailDetails_" in line and flagWrite == 1 or "messageso" in line and flagWrite == 1:  # fim da informação
+            # logTeamsCreation.write(line)
             logTeamsCreation.write("\n-----------------------------------------------"
                                    "------------------------------------------------------------------\n")
             logTeamsCreation.write("----------------------------------------------------------------"
                                    "-------------------------------------------------\n")
             flagWrite = 0
             count = 1
+            continue
+        if flagWrite == 1:
+            logTeamsCreation.write(line)
 
     # fechar ficheiros
     logFinalRead.close()
@@ -365,12 +371,14 @@ def criarObjetosDeCriacaoDeEquipas(pathArmazenamento):
 
     flag1 = 0
     flag2 = 0
+    first = 1
 
     while line := logTeamsCreation.readline():
 
         # ir buscar id da conversacao e data de criacao
-        if "messageso\"" in line:
+        if "messageso\"" in line and first:
             flag1 = 1
+            first = 0
 
             # ir buscar id da conversacao
             conversationid = ""
@@ -382,19 +390,19 @@ def criarObjetosDeCriacaoDeEquipas(pathArmazenamento):
             for i in range(indexconverstionid + 25, indexconverstionidfinal):
                 conversationid = conversationid + lista[i]
 
+
             # ir buscar data de criacao da conversacao
             date = ""
-            try:
-                timestamp = int(line[:10])
-            except:
-                timestamp = time.time()
+
+            timestamp = line[:10]
             # tentar converter timestamp para timezone UTC
             try:
-                date = datetime.utcfromtimestamp(timestamp)
+                date = datetime.utcfromtimestamp(int(timestamp))
+                date = date.astimezone(tz=tz.tzlocal())
             except:
                 date = timestamp
 
-            date = date.astimezone(tz=tz.tzlocal())
+
 
         # ir buscar membros adicionados a conversacao e quem criou a conversacao
         if "renderContent" in line:
@@ -526,6 +534,7 @@ def criarObjetosDeCriacaoDeEquipas(pathArmazenamento):
         if flag1 and flag2:
             flag1 = 0
             flag2 = 0
+            first = 1
             # criar objeto de ConversationCreationDetails()
             conversation_details = ConversationCreationDetails(conversationid, str(date), initiatororgid, targets)
 
@@ -540,7 +549,7 @@ def criarObjetosDeCriacaoDeEquipas(pathArmazenamento):
             conversa.creator = creator
         if isinstance(conversa.creator, str):
             oID = conversa.creator
-            conversa.creator = Contacto('Desc.', 'Desc.', oID)
+            conversa.creator = Contacto('Unknown', 'Unknown', oID)
 
         # ir buscar contacto do(s) membro(s) a ser(em) adicionado(s)
         members = []
@@ -1000,6 +1009,7 @@ def filtro(buffer):
                     mensagem.cvID = cvId
                     if arrayReacoes.__len__() > 0:
                         mensagem.reactions = arrayReacoes
+                        #print(pathMulti)
                         try:
                             pathToAutopsy
                         except NameError:
@@ -1125,6 +1135,308 @@ def geraContactos(pathArmazenamento):
                 arrayContactos[orgidContacto] = contacto
 
 
+
+def createhtmltables(pathToFolder):
+    # FORMAT -------------------------------------------------
+
+    css_string = '''
+        .mystyle {
+            font-size: 11pt; 
+            font-family: Arial;
+            border-collapse: collapse; 
+            border: 1px solid silver;
+            width: 100%;
+        }
+        .mystyle th {
+            background-color: royalblue;
+            color: white;
+        }
+
+        .mystyle td, th {
+            padding: 5px;
+        }
+
+        .mystyle tr:nth-child(even) {
+            background: #f2f2f2;;
+        }
+
+        .mystyle tr:hover {
+            background: silver;
+            cursor: pointer;
+        }
+        '''
+    with open(os.path.join(pathToFolder, "df_style.css"), 'w') as f:
+        f.write(css_string)
+
+    html_string = '''
+    <html>
+      <head><title>{title}</title></head>
+      <link rel="stylesheet" type="text/css" href="df_style.css"/>
+      <body>
+        <h1>{title}</h1>
+        {table}
+      </body>
+    </html>.
+    '''
+
+    pd.set_option('display.width', 1000)
+    pd.set_option('colheader_justify', 'center')
+    # -------------------------------------------------
+
+    # Create html table to present Contacts
+    contacts_dict = {}
+    for k, v in arrayContactos.items():
+        contacts_dict[k] = [v.nome, v.email]
+
+    sorted_by_name_contacts = {}
+    iterator = 1
+    for k, v in sorted(contacts_dict.items(), key=lambda item: item[1][0].upper()):
+        sorted_by_name_contacts[iterator] = v
+        iterator = iterator + 1
+
+    frame = pd.DataFrame.from_dict(sorted_by_name_contacts, orient='index', columns=['Name', 'Email'])
+    with open(os.path.join(pathToFolder, "User_Contacts.html"), 'w') as file:
+        file.write(html_string.format(title="CONTACTS", table=frame.to_html(classes='mystyle')))
+
+    # Create html table to present Messages
+    messages = []
+    for message in arrayMensagens:
+        if (len(message.files) > 0):
+            files_str = ""
+            for file in message.files:
+                files_str = files_str + file.toString() + " ; "
+        else:
+            files_str = "N/A"
+
+        new = [message.cvID, message.time, message.sender, message.message, files_str]
+        messages.append(new)
+
+    def first_element(elem):
+        return elem[0]
+
+    messages.sort(key=first_element)
+
+    frame = pd.DataFrame(messages, columns=["Conversation", "Date", "Sender", "Message", "Files"])
+    with open(os.path.join(pathToFolder, "User_Messages.html"), 'w', encoding="utf-8") as file:
+        file.write(html_string.format(title="MESSAGES", table=frame.to_html(classes='mystyle')))
+
+    # Create html table to present Calls in Teams
+    teams_calls = []
+    for call_team in arrayEventCall:
+        creator = call_team.creator.nome + ", " + call_team.creator.email
+        new = [call_team.calldate, call_team.duration, call_team.count, creator, call_team.participants]
+        teams_calls.append(new)
+
+    teams_calls.sort(key=first_element)
+
+    frame = pd.DataFrame(teams_calls, columns=["End date", "Duration (minutes)", "Number of participants",
+                                               "Call Creator", "Call Participants"])
+    with open(os.path.join(pathToFolder, "Calls_Teams.html"), 'w') as file:
+        file.write(html_string.format(title="TEAM CALLS", table=frame.to_html(classes='mystyle')))
+
+    # Create html table to present Calls in private conversations
+    private_calls = []
+    for call_private in arrayCallOneToOne:
+        new = [call_private.timestart, call_private.timefinish, call_private.criador.nome, call_private.criador.email,
+               call_private.presente.nome, call_private.presente.email]
+        private_calls.append(new)
+
+    private_calls.sort(key=first_element)
+
+    frame = pd.DataFrame(private_calls, columns=["Date Start Call", "Date End Call", "Call Creator Name",
+                                                 "Call Creator Email", "Call Participant Name",
+                                                 "Call Participant Email"])
+    with open(os.path.join(pathToFolder, "Calls_Private_Conversations.html"), 'w') as file:
+        file.write(html_string.format(title="PRIVATE CALLS", table=frame.to_html(classes='mystyle')))
+
+    # Create html table to present formation of new Teams
+    teams_formation = []
+    for k, v in dictionaryConversationDetails.items():
+        for member in v.members:
+            new = [v.conversation_id, v.date, v.creator.nome, v.creator.email, member.nome, member.email]
+            teams_formation.append(new)
+
+    teams_formation.sort(key=first_element)
+
+    frame = pd.DataFrame(teams_formation, columns=["Conversation", "Date", "Name of User who added member",
+                                                   "Email of User who added member", "Member Name", "Member Email"])
+
+    with open(os.path.join(pathToFolder, "Teams_Formation.html"), 'w') as file:
+        file.write(html_string.format(title="TEAMS FORMATION", table=frame.to_html(classes='mystyle')))
+
+
+    # generate index html page
+    html_string_index = '''
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <title>MS Teams Data</title>
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+                    <link rel="stylesheet" type="text/css" href="style.css"/
+                </head>
+                <body>
+                    <h1 style="text-align: center; padding: 10% 0;">Microsoft Teams extracted user data</h1>
+                    <ul>
+                        <li>
+                            <a href="User_Contacts.html">
+                                <div class="icon">
+                                    <i class="fa fa-address-book"></i>
+                                    <i class="fa fa-address-book"></i>
+                                </div>
+                                <div class="name"><span data-text="{contacts}">Contacts</span></div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="User_Messages.html">
+                                <div class="icon">
+                                    <i class="fa fa-envelope"></i>
+                                    <i class="fa fa-envelope"></i>
+                                </div>
+                                <div class="name"><span data-text="{messages}">Messages</span></div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Calls_Private_Conversations.html">
+                                <div class="icon">
+                                    <i class="fa fa-phone"></i>
+                                    <i class="fa fa-phone"></i>
+                                </div>
+                                <div class="name"><span data-text="{privateCalls}">Private Calls</span></div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Teams_Formation.html">
+                                <div class="icon">
+                                    <i class="fa fa-users"></i>
+                                    <i class="fa fa-users"></i>
+                                </div>
+                                <div class="name"><span data-text="{teamsFormation}">Teams Formation</span></div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="Calls_Teams.html">
+                                <div class="icon">
+                                    <i class="fa fa-phone"></i>
+                                    <i class="fa fa-phone"></i>
+                                </div>
+                                <div class="name"><span data-text="{teamCalls}">Team Calls</span></div>
+                            </a>
+                        </li>
+                    </ul>
+                </body>
+            </html>
+        '''
+    with open(os.path.join(pathToFolder, "index.html"), 'w', encoding="utf-8") as file:
+        file.write(html_string_index.format(contacts=str(len(sorted_by_name_contacts)), messages=str(len(messages)), privateCalls=str(len(private_calls)), teamsFormation=str(len(teams_formation)),
+                                            teamCalls=str(len(teams_calls))))
+
+    css_string = '''
+                body 
+                {
+                    margin: 0;
+                    padding: 0;
+                    font-family: sans-serif;
+                }
+
+                ul 
+                {
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    margin: 0;
+                    padding: 20px 0;
+                    display: flex;
+                }
+
+                ul li 
+                {
+                    list-style: none;
+                    text-align: center;
+                    display: block;
+                }
+
+                ul li:last-child 
+                {
+                    border-right: none;
+                }
+
+                ul li a 
+                {
+                    text-decoration: none;
+                    padding: 0 20px;
+                    display: block;
+                }
+
+                ul li a .icon
+                {
+                    width: 150px;
+                    height: 40px;
+                    text-align: center;
+                    overflow: hidden;
+                    margin: 0 auto 10px;
+                }
+
+                ul li a .icon .fa
+                {
+                    width: 100%;
+                    height: 100%;
+                    line-height: 40px;
+                    font-size: 34px;
+                    transition: 0.3s;
+                    color: #000;
+                }
+
+                ul li a:hover .icon .fa:last-child
+                {
+                    color: royalblue;
+                }
+
+                ul li a:hover .icon .fa
+                {
+                    transform: translateY(-100%);
+                }
+
+                ul li a .name
+                {
+                    position: relative;
+                    height: 20px;
+                    width: 100%;
+                    display: block;
+                    overflow: hidden;
+                }
+
+                ul li a .name span
+                {
+                    display: block;
+                    position: relative;
+                    color: #000;
+                    font-size: 18px;
+                    line-height: 20px;
+                    transition: 0.3s;
+                }
+
+                ul li a .name span::before
+                {
+                    content: attr(data-text);
+                    position: absolute;
+                    top: -100%;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    color: red;
+                }
+
+                ul li a:hover .name span
+                {
+                    transform: translateY(100%);
+                }
+
+        '''
+    with open(os.path.join(pathToFolder, "style.css"), 'w') as f:
+        f.write(css_string)
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
     pathUsers = ""
@@ -1194,6 +1506,9 @@ if __name__ == "__main__":
                             criarObjetosDeEventCalls(pathMulti)
                             idMessage = 1
                             findpadrao(pathMulti)
+
+                            createhtmltables(pathMulti)
+
                             with open(os.path.join(pathMulti, 'Contactos.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['nome', 'email', 'orgid''user']
@@ -1309,6 +1624,8 @@ if __name__ == "__main__":
             criarObjetosDeEventCalls(pathToAutopsy)
 
             findpadrao(pathToAutopsy)
+
+            createhtmltables(pathToAutopsy)
 
             with open(os.path.join(pathToAutopsy, 'Contactos.csv'), 'a+', newline='', encoding="utf-8") as csvfile:
                 fieldnames = ['nome', 'email', 'orgid', 'user']
