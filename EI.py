@@ -852,8 +852,12 @@ def filtro(buffer):
                         break
                     indexFileUrl += 10
                     indexFileUrlFinal = line.find("siteUrl", indexFileUrl) - 3
+                    if line.find("itemId", indexFileUrl) < indexFileUrlFinal and line.find("itemId", indexFileUrl) !=-1 :
+                        indexFileUrlFinal = line.find("itemId", indexFileUrl) - 3
                     indexNomeFile = line.find("fileName", indexNomeFile) + 11
                     indexNomeFileFinal = line.find("fileType", indexNomeFile) - 3
+                    if line.find("filePreview",indexNomeFile)<indexNomeFileFinal and line.find("filePreview",indexNomeFile) != -1 :
+                        indexNomeFileFinal=line.find("filePreview",indexNomeFile)-3
                     indexCleanTexto = richHtml.find("<div><span><img")
                     indexCleanTextoFinal = richHtml.find("</div>", indexCleanTexto) + 6
                     if indexCleanTexto != -1 and indexCleanTextoFinal != -1 and indexCleanTexto < indexCleanTextoFinal:
@@ -973,7 +977,7 @@ def filtro(buffer):
                         except:
                             print("")
                         reaction.orgid = orgidReact
-                        reaction.emoji = emojiReaction
+                        reaction.emoji = linkEmoji.format(emojiReaction)
                         try:
                             tr = datetime.utcfromtimestamp(float(timeReaction) / 1000.0)
                             tr = tr.astimezone(tz=tz.tzlocal())
@@ -1544,6 +1548,8 @@ if __name__ == "__main__":
                                 messagewriter.writerow(fieldnames)
                                 for key, value in dictFiles.items():
                                     for f in value:
+                                        print(f.toString())
+                                        print(str([str(key), f.nome, f.local, 'user']))
                                         messagewriter.writerow([str(key), f.nome, f.local, 'user'])
                                 csvfile.close()
                             dictFiles.clear()
@@ -1646,12 +1652,6 @@ if __name__ == "__main__":
                     m.message = m.message.replace(";", "(semicolon)")
                     if len(m.files) > 0:
                         dictFiles[idMessage] = m.files
-                    # if len(m.reactions) > 0:
-                    #     print(len(m.reactions))
-                    #     print(len(m.reactions))
-                    #     for r in m.reactions:
-                    #         print(r.toString())
-                    # #     dictReacts[idMessage] = m.reactions
                     if m.message == "":
                         m.message = "Empty Text"
                     messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID, user])
@@ -1664,7 +1664,9 @@ if __name__ == "__main__":
                 messagewriter.writerow(fieldnames)
                 for key, value in dictFiles.items():
                     for f in value:
-                        messagewriter.writerow([str(key), f.nome, f.local, user])
+                        print(f.toString())
+                        print(str([str(key), f.nome, f.local, 'user']))
+                        messagewriter.writerow([str(key), f.nome, f.local, 'user'])
                 csvfile.close()
 
             with open(os.path.join(pathToAutopsy, 'EventCall.csv'), 'a+', newline='',
