@@ -1,3 +1,4 @@
+import codecs
 import getopt
 import csv
 import math
@@ -86,6 +87,7 @@ def utf16customdecoder(string, pattern):
     st = decoder(string, pattern)
     acentos = multiFind(st)
     st = acentuar(acentos, st)
+    print(st)
     return st
 
 
@@ -189,8 +191,6 @@ def criarObjetosDeEventCalls(pathArmazenamento):
             for i in range(indexcalldate, indexcalldatefinal - 3):
                 calldate = calldate + lista[i]
 
-
-
             # tentar converter timestamp para timezone UTC
             try:
                 calldate = int(calldate[:10])
@@ -199,10 +199,9 @@ def criarObjetosDeEventCalls(pathArmazenamento):
             except:
                 calldate = calldate
 
-
             # get the user who started the call
             indexcallcreator = line.find(",8:orgid:")
-            indexcallcreatorfinal = indexcallcreator + 9 + 36 # 36 is the number of chars in orgid
+            indexcallcreatorfinal = indexcallcreator + 9 + 36  # 36 is the number of chars in orgid
             for i in range(indexcallcreator + 9, indexcallcreatorfinal):
                 callcreator = callcreator + lista[i]
 
@@ -390,7 +389,6 @@ def criarObjetosDeCriacaoDeEquipas(pathArmazenamento):
             for i in range(indexconverstionid + 25, indexconverstionidfinal):
                 conversationid = conversationid + lista[i]
 
-
             # ir buscar data de criacao da conversacao
             date = ""
 
@@ -401,8 +399,6 @@ def criarObjetosDeCriacaoDeEquipas(pathArmazenamento):
                 date = date.astimezone(tz=tz.tzlocal())
             except:
                 date = timestamp
-
-
 
         # ir buscar membros adicionados a conversacao e quem criou a conversacao
         if "renderContent" in line:
@@ -1009,7 +1005,7 @@ def filtro(buffer):
                     mensagem.cvID = cvId
                     if arrayReacoes.__len__() > 0:
                         mensagem.reactions = arrayReacoes
-                        #print(pathMulti)
+                        # print(pathMulti)
                         try:
                             pathToAutopsy
                         except NameError:
@@ -1019,7 +1015,7 @@ def filtro(buffer):
 
                         with open(os.path.join(pathReacts, 'Reacts.csv'), 'a+', newline='',
                                   encoding="utf-8") as csvfile:
-                            fieldnames = ['messageID', 'reacted_with', 'reacted_by', 'react_time']
+                            fieldnames = ['messageID', 'reacted_with', 'reacted_by', 'react_time', 'user']
                             messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                             if not wroteReacts:
                                 messagewriter.writerow(fieldnames)
@@ -1029,7 +1025,7 @@ def filtro(buffer):
                                     c = arrayContactos.get(r.orgid)
                                 else:
                                     c = Contacto(orgid=r.orgid)
-                                messagewriter.writerow([str(idM), r.emoji, c.nome, r.time])
+                                messagewriter.writerow([str(idM), r.emoji, c.nome, r.time, user])
                             csvfile.close()
                     mensagem.files = files
 
@@ -1133,7 +1129,6 @@ def geraContactos(pathArmazenamento):
             contacto = Contacto(nameContacto, emailContacto, orgidContacto)
             if orgidContacto not in arrayContactos and orgidContacto != "":
                 arrayContactos[orgidContacto] = contacto
-
 
 
 def createhtmltables(pathToFolder):
@@ -1264,7 +1259,6 @@ def createhtmltables(pathToFolder):
     with open(os.path.join(pathToFolder, "Teams_Formation.html"), 'w') as file:
         file.write(html_string.format(title="TEAMS FORMATION", table=frame.to_html(classes='mystyle')))
 
-
     # generate index html page
     html_string_index = '''
             <!DOCTYPE html>
@@ -1327,7 +1321,9 @@ def createhtmltables(pathToFolder):
             </html>
         '''
     with open(os.path.join(pathToFolder, "index.html"), 'w', encoding="utf-8") as file:
-        file.write(html_string_index.format(contacts=str(len(sorted_by_name_contacts)), messages=str(len(messages)), privateCalls=str(len(private_calls)), teamsFormation=str(len(teams_formation)),
+        file.write(html_string_index.format(contacts=str(len(sorted_by_name_contacts)), messages=str(len(messages)),
+                                            privateCalls=str(len(private_calls)),
+                                            teamsFormation=str(len(teams_formation)),
                                             teamCalls=str(len(teams_calls))))
 
     css_string = '''
@@ -1453,6 +1449,7 @@ if __name__ == "__main__":
     for opt, arg in opts:
         if opt == "--pathToEI":
             pathModule = arg
+            pathModule = pathModule.replace("\"", "\\")
             print(pathModule)
         if opt == '-h':
             print('ei.py -u <pathToUsers> ')
@@ -1527,11 +1524,13 @@ if __name__ == "__main__":
                                 messagewriter.writerow(fieldnames)
                                 for m in arrayMensagens:
                                     m.message = m.message.replace(";", "(semicolon)")
-                                    messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID, user])
                                     if len(m.files) > 0:
                                         dictFiles[idMessage] = m.files
                                     if len(m.reactions) > 0:
                                         dictReacts[idMessage] = m.reactions
+                                    if m.message == "":
+                                        m.message = "Empty Text"
+                                    messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID, user])
                                     idMessage += 1
                                 csvfile.close()
 
@@ -1592,6 +1591,7 @@ if __name__ == "__main__":
                                         [ch.criador.nome, ch.criador.email, ch.timestart, ch.timefinish,
                                          ch.presente.nome, ch.presente.email, ch.state, user])
                                 csvfile.close()
+
         elif opt in ("-a", "--autopsy"):
             if pathModule == "":
                 sys.exit('ei.py --pathToEI <pathToEIFolder> -a <LDBFolderNameInProjetoEIAppData>')
@@ -1642,7 +1642,6 @@ if __name__ == "__main__":
                 messagewriter.writerow(fieldnames)
                 for m in arrayMensagens:
                     m.message = m.message.replace(";", "(semicolon)")
-                    messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID, user])
                     if len(m.files) > 0:
                         dictFiles[idMessage] = m.files
                     # if len(m.reactions) > 0:
@@ -1651,6 +1650,9 @@ if __name__ == "__main__":
                     #     for r in m.reactions:
                     #         print(r.toString())
                     # #     dictReacts[idMessage] = m.reactions
+                    if m.message == "":
+                        m.message = "Empty Text"
+                    messagewriter.writerow([str(idMessage), m.message, m.time, m.sender, m.cvID, user])
                     idMessage += 1
                 csvfile.close()
 
