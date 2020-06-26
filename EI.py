@@ -1450,6 +1450,8 @@ if __name__ == "__main__":
         if opt == "--pathToEI":
             pathModule = arg
             pathModule = pathModule.replace("\"", "\\")
+            pathModule = pathModule.rstrip()
+            pathModule = pathModule.lstrip()
             print(pathModule)
         if opt == '-h':
             print('ei.py -u <pathToUsers> ')
