@@ -602,10 +602,6 @@ def filtro(buffer):
                 filtros[filter] = 1
     for y, x in filtros.items():
         if x == 0:
-            if buffer.__len__() > 0:
-                #print(y)
-                #print(str(buffer))
-                print("----------------------------")
             ok = 0
     if ok:
 
@@ -1007,30 +1003,31 @@ def filtro(buffer):
                     mensagem.time = time
                     mensagem.sender = sender
                     mensagem.cvID = cvId
-                    if arrayReacoes.__len__() > 0:
-                        mensagem.reactions = arrayReacoes
-                        # print(pathMulti)
-                        try:
-                            pathToAutopsy
-                        except NameError:
-                            pathReacts = pathMulti
-                        else:
-                            pathReacts = pathToAutopsy
+                    with open(os.path.join(pathReacts, 'Reacts.csv'), 'a+', newline='',
+                              encoding="utf-8") as csvfile:
+                        if arrayReacoes.__len__() > 0:
+                            mensagem.reactions = arrayReacoes
+                            # print(pathMulti)
+                            try:
+                                pathToAutopsy
+                            except NameError:
+                                pathReacts = pathMulti
+                            else:
+                                pathReacts = pathToAutopsy
 
-                        with open(os.path.join(pathReacts, 'Reacts.csv'), 'a+', newline='',
-                                  encoding="utf-8") as csvfile:
-                            fieldnames = ['messageID', 'reacted_with', 'reacted_by', 'react_time', 'user']
-                            messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                            if not wroteReacts:
-                                messagewriter.writerow(fieldnames)
-                                wroteReacts = True
-                            for r in arrayReacoes:
-                                if r.orgid in arrayContactos:
-                                    c = arrayContactos.get(r.orgid)
-                                else:
-                                    c = Contacto(orgid=r.orgid)
-                                messagewriter.writerow([str(idM), r.emoji, c.nome, r.time, user])
-                            csvfile.close()
+
+                                fieldnames = ['messageID', 'reacted_with', 'reacted_by', 'react_time', 'user']
+                                messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                                if not wroteReacts:
+                                    messagewriter.writerow(fieldnames)
+                                    wroteReacts = True
+                                for r in arrayReacoes:
+                                    if r.orgid in arrayContactos:
+                                        c = arrayContactos.get(r.orgid)
+                                    else:
+                                        c = Contacto(orgid=r.orgid)
+                                    messagewriter.writerow([str(idM), r.emoji, c.nome, r.time, user])
+                        csvfile.close()
                     mensagem.files = files
 
                     arrayMensagens.append(mensagem)
