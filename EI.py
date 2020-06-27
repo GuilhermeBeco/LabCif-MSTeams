@@ -87,7 +87,7 @@ def utf16customdecoder(string, pattern):
     st = decoder(string, pattern)
     acentos = multiFind(st)
     st = acentuar(acentos, st)
-    print(st)
+    #print(st)
     return st
 
 
@@ -603,8 +603,8 @@ def filtro(buffer):
     for y, x in filtros.items():
         if x == 0:
             if buffer.__len__() > 0:
-                print(y)
-                print(str(buffer))
+                #print(y)
+                #print(str(buffer))
                 print("----------------------------")
             ok = 0
     if ok:
@@ -1135,7 +1135,8 @@ def geraContactos(pathArmazenamento):
                 arrayContactos[orgidContacto] = contacto
 
 
-def createhtmltables(pathToFolder):
+
+def createhtmltables(pathToFolder, user):
     # FORMAT -------------------------------------------------
 
     css_string = '''
@@ -1182,10 +1183,13 @@ def createhtmltables(pathToFolder):
     pd.set_option('colheader_justify', 'center')
     # -------------------------------------------------
 
+    def first_element(elem):
+        return elem[0]
+
     # Create html table to present Contacts
     contacts_dict = {}
     for k, v in arrayContactos.items():
-        contacts_dict[k] = [v.nome, v.email]
+        contacts_dict[k] = [v.nome, v.email, user]
 
     sorted_by_name_contacts = {}
     iterator = 1
@@ -1193,79 +1197,76 @@ def createhtmltables(pathToFolder):
         sorted_by_name_contacts[iterator] = v
         iterator = iterator + 1
 
-    frame = pd.DataFrame.from_dict(sorted_by_name_contacts, orient='index', columns=['Name', 'Email'])
-    with open(os.path.join(pathToFolder, "User_Contacts.html"), 'w') as file:
-        file.write(html_string.format(title="CONTACTS", table=frame.to_html(classes='mystyle')))
+    frame_contacts = pd.DataFrame.from_dict(sorted_by_name_contacts, orient='index', columns=['Name', 'Email', 'User'])
+    with open(os.path.join(pathToFolder, "User_Contacts.html"), 'w', encoding="utf-8") as file:
+        file.write(html_string.format(title="CONTACTS", table=frame_contacts.to_html(classes='mystyle')))
 
-    # Create html table to present Messages
-    messages = []
-    for message in arrayMensagens:
-        if (len(message.files) > 0):
-            files_str = ""
-            for file in message.files:
-                files_str = files_str + file.toString() + " ; "
-        else:
-            files_str = "N/A"
-
-        new = [message.cvID, message.time, message.sender, message.message, files_str]
-        messages.append(new)
-
-    def first_element(elem):
-        return elem[0]
-
-    messages.sort(key=first_element)
-
-    frame = pd.DataFrame(messages, columns=["Conversation", "Date", "Sender", "Message", "Files"])
-    with open(os.path.join(pathToFolder, "User_Messages.html"), 'w', encoding="utf-8") as file:
-        file.write(html_string.format(title="MESSAGES", table=frame.to_html(classes='mystyle')))
 
     # Create html table to present Calls in Teams
     teams_calls = []
     for call_team in arrayEventCall:
         creator = call_team.creator.nome + ", " + call_team.creator.email
-        new = [call_team.calldate, call_team.duration, call_team.count, creator, call_team.participants]
+        new = [call_team.calldate, call_team.duration, call_team.count, creator, call_team.participants, user]
         teams_calls.append(new)
 
     teams_calls.sort(key=first_element)
 
-    frame = pd.DataFrame(teams_calls, columns=["End date", "Duration (minutes)", "Number of participants",
-                                               "Call Creator", "Call Participants"])
-    with open(os.path.join(pathToFolder, "Calls_Teams.html"), 'w') as file:
-        file.write(html_string.format(title="TEAM CALLS", table=frame.to_html(classes='mystyle')))
+    frame_team_calls = pd.DataFrame(teams_calls, columns=["End date", "Duration (minutes)", "Number of participants",
+                                               "Call Creator", "Call Participants", "user"])
+    with open(os.path.join(pathToFolder, "Calls_Teams.html"), 'w', encoding="utf-8") as file:
+        file.write(html_string.format(title="TEAM CALLS", table=frame_team_calls.to_html(classes='mystyle')))
 
     # Create html table to present Calls in private conversations
     private_calls = []
     for call_private in arrayCallOneToOne:
         new = [call_private.timestart, call_private.timefinish, call_private.criador.nome, call_private.criador.email,
-               call_private.presente.nome, call_private.presente.email]
+               call_private.presente.nome, call_private.presente.email, user]
         private_calls.append(new)
 
     private_calls.sort(key=first_element)
 
-    frame = pd.DataFrame(private_calls, columns=["Date Start Call", "Date End Call", "Call Creator Name",
+    frame_private_calls = pd.DataFrame(private_calls, columns=["Date Start Call", "Date End Call", "Call Creator Name",
                                                  "Call Creator Email", "Call Participant Name",
-                                                 "Call Participant Email"])
-    with open(os.path.join(pathToFolder, "Calls_Private_Conversations.html"), 'w') as file:
-        file.write(html_string.format(title="PRIVATE CALLS", table=frame.to_html(classes='mystyle')))
+                                                 "Call Participant Email", "User"])
+    with open(os.path.join(pathToFolder, "Calls_Private_Conversations.html"), 'w', encoding="utf-8") as file:
+        file.write(html_string.format(title="PRIVATE CALLS", table=frame_private_calls.to_html(classes='mystyle')))
 
     # Create html table to present formation of new Teams
     teams_formation = []
     for k, v in dictionaryConversationDetails.items():
         for member in v.members:
-            new = [v.conversation_id, v.date, v.creator.nome, v.creator.email, member.nome, member.email]
+            new = [v.conversation_id, v.date, v.creator.nome, v.creator.email, member.nome, member.email, user]
             teams_formation.append(new)
 
     teams_formation.sort(key=first_element)
 
-    frame = pd.DataFrame(teams_formation, columns=["Conversation", "Date", "Name of User who added member",
-                                                   "Email of User who added member", "Member Name", "Member Email"])
+    frame_teams_formation = pd.DataFrame(teams_formation, columns=["Conversation", "Date", "Name of User who added member",
+                                                   "Email of User who added member", "Member Name", "Member Email", "User"])
 
-    with open(os.path.join(pathToFolder, "Teams_Formation.html"), 'w') as file:
-        file.write(html_string.format(title="TEAMS FORMATION", table=frame.to_html(classes='mystyle')))
+    with open(os.path.join(pathToFolder, "Teams_Formation.html"), 'w', encoding="utf-8") as file:
+        file.write(html_string.format(title="TEAMS FORMATION", table=frame_teams_formation.to_html(classes='mystyle')))
+
+    # Create html table to present messages files
+    frame_files = pd.read_csv(os.path.join(pathToFolder, "Files.csv"), delimiter=";", header=0,
+                        names=["Message ID", "File name", "File link", 'User'])
+    with open(os.path.join(pathToFolder, "User_Messages_Files.html"), 'w', encoding="utf-8") as file:
+        file.write(html_string.format(title="MESSAGES FILES", table=frame_files.to_html(classes='mystyle')))
+
+    # Create html table to present messages reactions
+    frame_reacts = pd.read_csv(os.path.join(pathToFolder, "Reacts.csv"), delimiter=";", header=0,
+                        names=["Message ID", "Reaction", "Reacted by", 'Date'])
+    with open(os.path.join(pathToFolder, "User_Messages_Reacts.html"), 'w', encoding="utf-8") as file:
+        file.write(html_string.format(title="MESSAGES REACTIONS", table=frame_reacts.to_html(classes='mystyle')))
+
+    # Create html table to present messages
+    frame_messages = pd.read_csv(os.path.join(pathToFolder, "Mensagens.csv"), delimiter=";", header=0,
+                        names=["Message ID", "Message", "Date", 'Sender', 'Conversation ID', 'User'])
+    with open(os.path.join(pathToFolder, "User_Messages.html"), 'w', encoding="utf-8") as file:
+        file.write(html_string.format(title="MESSAGES", table=frame_messages.to_html(classes='mystyle')))
 
     # generate index html page
     html_string_index = '''
-            <!DOCTYPE html>
+                <!DOCTYPE html>
             <html>
                 <head>
                     <title>MS Teams Data</title>
@@ -1274,6 +1275,7 @@ def createhtmltables(pathToFolder):
                 </head>
                 <body>
                     <h1 style="text-align: center; padding: 10% 0;">Microsoft Teams extracted user data</h1>
+                    <h1 style="text-align: center; padding: 10% 0;">User: {user}</h1>
                     <ul>
                         <li>
                             <a href="User_Contacts.html">
@@ -1281,7 +1283,8 @@ def createhtmltables(pathToFolder):
                                     <i class="fa fa-address-book"></i>
                                     <i class="fa fa-address-book"></i>
                                 </div>
-                                <div class="name"><span data-text="{contacts}">Contacts</span></div>
+                                <div class="name">Contacts</div>
+                                <div class="number">{contacts_number}</div>
                             </a>
                         </li>
                         <li>
@@ -1290,7 +1293,28 @@ def createhtmltables(pathToFolder):
                                     <i class="fa fa-envelope"></i>
                                     <i class="fa fa-envelope"></i>
                                 </div>
-                                <div class="name"><span data-text="{messages}">Messages</span></div>
+                                <div class="name">Messages</div>
+                                <div class="number">{messages_number}</div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="User_Messages_Files.html">
+                                <div class="icon">
+                                    <i class="fa fa-file"></i>
+                                    <i class="fa fa-file"></i>
+                                </div>
+                                <div class="name">Messages Files</div>
+                                <div class="number">{messages_files_number}</div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="User_Messages_Reacts.html">
+                                <div class="icon">
+                                    <i class="fa fa-thumbs-up"></i>
+                                    <i class="fa fa-thumbs-up"></i>
+                                </div>
+                                <div class="name">Messages Reactions</div>
+                                <div class="number">{messages_reacts_number}</div>
                             </a>
                         </li>
                         <li>
@@ -1299,7 +1323,8 @@ def createhtmltables(pathToFolder):
                                     <i class="fa fa-phone"></i>
                                     <i class="fa fa-phone"></i>
                                 </div>
-                                <div class="name"><span data-text="{privateCalls}">Private Calls</span></div>
+                                <div class="name">Private Calls</div>
+                                <div class="number">{private_calls_number}</div>
                             </a>
                         </li>
                         <li>
@@ -1308,7 +1333,8 @@ def createhtmltables(pathToFolder):
                                     <i class="fa fa-users"></i>
                                     <i class="fa fa-users"></i>
                                 </div>
-                                <div class="name"><span data-text="{teamsFormation}">Teams Formation</span></div>
+                                <div class="name">Teams Formations</div>
+                                <div class="number">{teams_formation_number}</div>
                             </a>
                         </li>
                         <li>
@@ -1317,124 +1343,113 @@ def createhtmltables(pathToFolder):
                                     <i class="fa fa-phone"></i>
                                     <i class="fa fa-phone"></i>
                                 </div>
-                                <div class="name"><span data-text="{teamCalls}">Team Calls</span></div>
+                                <div class="name">Teams Calls</div>
+                                <div class="number">{team_calls_number}</div>
                             </a>
                         </li>
                     </ul>
                 </body>
             </html>
-        '''
+            '''
     with open(os.path.join(pathToFolder, "index.html"), 'w', encoding="utf-8") as file:
-        file.write(html_string_index.format(contacts=str(len(sorted_by_name_contacts)), messages=str(len(messages)),
-                                            privateCalls=str(len(private_calls)),
-                                            teamsFormation=str(len(teams_formation)),
-                                            teamCalls=str(len(teams_calls))))
+        file.write(html_string_index.format(contacts_number=str(frame_contacts.__len__()),
+                                            messages_number=str(frame_messages.__len__()),
+                                            messages_files_number=str(frame_files.__len__()),
+                                            messages_reacts_number=str(frame_reacts.__len__()),
+                                            private_calls_number=str(frame_private_calls.__len__()),
+                                            teams_formation_number=str(frame_teams_formation.__len__()),
+                                            team_calls_number=str(frame_team_calls.__len__()),
+                                            user=user))
 
     css_string = '''
-                body 
-                {
-                    margin: 0;
-                    padding: 0;
-                    font-family: sans-serif;
-                }
+                    body 
+                    {
+                        margin: 0;
+                        padding: 0;
+                        font-family: sans-serif;
+                    }
 
-                ul 
-                {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    margin: 0;
-                    padding: 20px 0;
-                    display: flex;
-                }
+                    ul 
+                    {
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        margin: 0;
+                        padding: 20px 0;
+                        display: flex;
+                    }
 
-                ul li 
-                {
-                    list-style: none;
-                    text-align: center;
-                    display: block;
-                }
+                    ul li 
+                    {
+                        list-style: none;
+                        text-align: center;
+                        display: block;
+                    }
 
-                ul li:last-child 
-                {
-                    border-right: none;
-                }
+                    ul li:last-child 
+                    {
+                        border-right: none;
+                    }
 
-                ul li a 
-                {
-                    text-decoration: none;
-                    padding: 0 20px;
-                    display: block;
-                }
+                    ul li a 
+                    {
+                        text-decoration: none;
+                        padding: 0 20px;
+                        display: block;
+                    }
 
-                ul li a .icon
-                {
-                    width: 150px;
-                    height: 40px;
-                    text-align: center;
-                    overflow: hidden;
-                    margin: 0 auto 10px;
-                }
+                    ul li a .icon
+                    {
+                        width: 150px;
+                        height: 40px;
+                        text-align: center;
+                        overflow: hidden;
+                        margin: 0 auto 10px;
+                    }
 
-                ul li a .icon .fa
-                {
-                    width: 100%;
-                    height: 100%;
-                    line-height: 40px;
-                    font-size: 34px;
-                    transition: 0.3s;
-                    color: #000;
-                }
+                    ul li a .icon .fa
+                    {
+                        width: 100%;
+                        height: 100%;
+                        line-height: 40px;
+                        font-size: 34px;
+                        transition: 0.3s;
+                        color: #000;
+                    }
 
-                ul li a:hover .icon .fa:last-child
-                {
-                    color: royalblue;
-                }
+                    ul li a:hover .icon .fa:last-child
+                    {
+                        color: royalblue;
+                    }
 
-                ul li a:hover .icon .fa
-                {
-                    transform: translateY(-100%);
-                }
+                    ul li a:hover .icon .fa
+                    {
+                        transform: translateY(-100%);
+                    }
 
-                ul li a .name
-                {
-                    position: relative;
-                    height: 20px;
-                    width: 100%;
-                    display: block;
-                    overflow: hidden;
-                }
+                    .name
+                    {
+                        color: #000;
+                    }
 
-                ul li a .name span
-                {
-                    display: block;
-                    position: relative;
-                    color: #000;
-                    font-size: 18px;
-                    line-height: 20px;
-                    transition: 0.3s;
-                }
+                    .number
+                    {
+                        color: red;
+                    }
 
-                ul li a .name span::before
-                {
-                    content: attr(data-text);
-                    position: absolute;
-                    top: -100%;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    color: red;
-                }
-
-                ul li a:hover .name span
-                {
-                    transform: translateY(100%);
-                }
-
-        '''
+            '''
     with open(os.path.join(pathToFolder, "style.css"), 'w') as f:
         f.write(css_string)
+
+
+    html = open(os.path.join(pathToFolder, "User_Messages.html"), 'r', encoding="utf-8")
+    source_code = html.read()
+    tables = pd.read_html(source_code)
+    for i, table in enumerate(tables):
+        table.to_csv(os.path.join(pathToFolder, 'messages_from_html.csv'), ';')
+
+#----------------------------------------------------------------------------------------------------------------
 
 
 if __name__ == "__main__":
@@ -1510,7 +1525,6 @@ if __name__ == "__main__":
                             idMessage = 1
                             findpadrao(pathMulti)
 
-                            createhtmltables(pathMulti)
 
                             with open(os.path.join(pathMulti, 'Contactos.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
@@ -1521,7 +1535,7 @@ if __name__ == "__main__":
                                 for key, value in arrayContactos.items():
                                     messagewriter.writerow([value.nome, value.email, value.orgid, user])
                                 csvfile.close()
-                            arrayContactos.clear()
+
                             with open(os.path.join(pathMulti, 'Mensagens.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['messageID', 'message', 'time', 'sender', 'conversation_id', 'user']
@@ -1552,8 +1566,7 @@ if __name__ == "__main__":
                                         print(str([str(key), f.nome, f.local, 'user']))
                                         messagewriter.writerow([str(key), f.nome, f.local, 'user'])
                                 csvfile.close()
-                            dictFiles.clear()
-                            arrayMensagens.clear()
+
                             with open(os.path.join(pathMulti, 'EventCall.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['calldate', 'creator_name', 'creator_email', 'count', 'duration',
@@ -1572,7 +1585,7 @@ if __name__ == "__main__":
                                             [call.calldate, call.creator.nome, call.creator.email, call.count, c.nome,
                                              c.email, user])
                                 csvfile.close()
-                            arrayEventCall.clear()
+
                             with open(os.path.join(pathMulti, 'Conversations.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['conversation_ID', 'date', 'nome_creator', 'email_creator', 'member_name',
@@ -1586,7 +1599,7 @@ if __name__ == "__main__":
                                             [value.conversation_id, value.date, value.creator.nome, value.creator.email,
                                              member.nome, member.email, user])
                                 csvfile.close()
-                            dictionaryConversationDetails.clear()
+
                             with open(os.path.join(pathMulti, 'CallOneToOne.csv'), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['originator_name', 'originator_email', 'time_start', 'time_finish',
@@ -1599,6 +1612,17 @@ if __name__ == "__main__":
                                         [ch.criador.nome, ch.criador.email, ch.timestart, ch.timefinish,
                                          ch.presente.nome, ch.presente.email, ch.state, user])
                                 csvfile.close()
+
+
+                                createhtmltables(pathMulti, user)
+
+                                arrayContactos.clear()
+                                dictFiles.clear()
+                                arrayMensagens.clear()
+                                arrayEventCall.clear()
+                                dictionaryConversationDetails.clear()
+                                arrayCallOneToOne.clear()
+
 
         elif opt in ("-a", "--autopsy"):
             if pathModule == "":
@@ -1632,8 +1656,6 @@ if __name__ == "__main__":
             criarObjetosDeEventCalls(pathToAutopsy)
 
             findpadrao(pathToAutopsy)
-
-            createhtmltables(pathToAutopsy)
 
             with open(os.path.join(pathToAutopsy, 'Contactos.csv'), 'a+', newline='', encoding="utf-8") as csvfile:
                 fieldnames = ['nome', 'email', 'orgid', 'user']
@@ -1711,3 +1733,5 @@ if __name__ == "__main__":
                         [ch.criador.nome, ch.criador.email, ch.timestart, ch.timefinish, ch.presente.nome,
                          ch.presente.email, ch.state, user])
                 csvfile.close()
+
+            createhtmltables(pathToAutopsy, user)
