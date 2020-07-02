@@ -1255,7 +1255,8 @@ def createhtmltables(pathToFolder, user):
 
     # Create html table to present messages
     frame_messages = pd.read_csv(os.path.join(pathToFolder, "Mensagens.csv"), delimiter=";", header=0,
-                                 names=["Message ID", "Message", "Date", 'Sender', 'Conversation ID', 'User'])
+                                 names=["Message ID", "Message", "Date", 'Sender', 'Conversation ID', 'User'],
+                                 encoding="utf-8")
     with open(os.path.join(pathToFolder, "User_Messages.html"), 'w', encoding="utf-8") as file:
         file.write(html_string.format(title="MESSAGES", table=frame_messages.to_html(classes='mystyle')))
 
@@ -1462,6 +1463,12 @@ if __name__ == "__main__":
         sys.exit(2)
     for opt, arg in opts:
         if opt == "--pathToEI":
+            ok = False
+            for o, v in opts:
+                if o == "-a":
+                    ok = True
+            if not ok:
+                sys.exit('ei.py --pathToEI <pathToEIFolder> -a <LDBFolderNameInProjetoEIAppData> or ei.py -u <pathToUsers> ')
             pathModule = arg
             pathModule = pathModule.replace("\"", "\\")
             pathModule = pathModule.rstrip()
