@@ -389,6 +389,9 @@ def criarObjetosDeCriacaoDeEquipas(pathArmazenamento):
             for i in range(indexconverstionid + 25, indexconverstionidfinal):
                 conversationid = conversationid + lista[i]
 
+            if conversationid.find(",") !=-1:
+                arr=conversationid.split(",")
+                conversationid=arr[1]
             # ir buscar data de criacao da conversacao
             date = ""
 
