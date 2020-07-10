@@ -1,5 +1,14 @@
 import os
-from models import Contacto
+
+class Contacto:
+    def __init__(self, nome="Desc.", email="Desc.", orgid="Desc."):
+        self.nome = nome
+        self.email = email
+        self.orgid = orgid
+
+    def toString(self):
+        return "Nome: {0} || Email: {1} || Orgid {2}".format(self.nome, self.email, self.orgid)
+
 
 
 def geraContactos(pathArmazenamento):

@@ -3,7 +3,7 @@ import os
 import zulu as zulu
 import Contacts
 import MSTeamsDecoder
-from models import File, Chamada, Reaction, MensagemCompleta
+from Calls import Chamada
 from dateutil.tz import tz
 from datetime import datetime
 
@@ -12,6 +12,46 @@ idM = 1
 arrayMensagens = []
 bufferBuffer = []
 arrayCallOneToOne = []
+
+
+class File:
+    def __init__(self, local, nome):
+        self.local = local
+        self.nome = nome
+
+    def toString(self):
+        return "Local:{0} Nome {1}".format(self.local, self.nome)
+
+
+class Reaction:
+    def __init__(self):
+        self.emoji = ""
+        self.time = ""
+        self.orgid = ""
+
+    def toString(self):
+        return "emoji: {0} || Time: {1} || Orgid: {2}".format(self.emoji, self.time, self.orgid)
+
+
+class MensagemCompleta:
+    def __init__(self):
+        self.message = ""
+        self.sender = ""
+        self.time = ""
+        self.files = []
+        self.hasEmoji = False
+        self.isMention = False
+        self.mention = ""
+        self.reactions = []
+        self.cvID = ""
+
+    def toString(self):
+        return "Message: {0} || Time: {1} || Sender: {2} || IsMention: {3} || Mention: {4} || HasEmoji: {5} || " \
+               "hasFiles:{6} || hasReactions:{7} || cvID:{8}".format(self.message, self.time, self.sender,
+                                                                     str(self.isMention),
+                                                                     self.mention, str(self.hasEmoji),
+                                                                     str(len(self.files)), str(len(self.reactions)),
+                                                                     self.cvID)
 
 
 def cleanMessage(message):

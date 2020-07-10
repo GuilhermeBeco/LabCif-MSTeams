@@ -1,11 +1,39 @@
 import os
-
-from models import EventCall
-
 import Contacts
 from dateutil.tz import tz
 from datetime import datetime
 import re
+
+
+class Chamada:
+    def __init__(self, originator, timestart, timefinish, target, state):
+        self.criador = originator
+        self.timestart = timestart
+        self.timefinish = timefinish
+        self.presente = target
+        self.state = state
+
+    def toString(self):
+        return "Start {0} || End: {1} || State: {2}|| Originator: {3} ||Target: {4}".format(self.timestart,
+                                                                                            self.timefinish, self.state,
+                                                                                            self.criador.toString(),
+                                                                                            self.presente.toString())
+
+
+class EventCall:
+    def __init__(self, calldate, creator, count, duration, participants, orgids):
+        self.calldate = calldate
+        self.creator = creator
+        self.count = count
+        self.duration = duration
+        self.participants = participants
+        self.orgids = orgids
+
+    def toString(self):
+        return "Data: " + self.calldate + " (UTC) || Criador da chamada: " + self.creator.toString() + "|| Numero de " \
+                                                                                                       "participantes: " + self.count + " || Duração da chamada (mins): " + self.duration + "|| Nomes dos " \
+                                                                                                                                                                                            "participantes: " + ', '.join(
+            self.participants) + " || Orgids: " + ', '.join(self.orgids)
 
 
 def extrairEventCallsToFile(pathArmazenamento):
@@ -45,7 +73,7 @@ def extrairEventCallsToFile(pathArmazenamento):
 
 
 # funcao que cria objetos com a info das chamadas obtida na funcao 'extrairEventCallsToFile()'
-def criarObjetosDeEventCalls(pathArmazenamento,arrayContactos):
+def criarObjetosDeEventCalls(pathArmazenamento, arrayContactos):
     # abrir ficheiro eventCalls para extrair informações de chamadas
     logEventCalls = open(os.path.join(pathArmazenamento, "eventCalls.txt"), "r", encoding="utf-8")
     calldate = ""
