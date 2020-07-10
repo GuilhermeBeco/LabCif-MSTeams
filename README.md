@@ -15,9 +15,9 @@ Teams artifacts extraction providing results easy to be analyzed. This executabl
 
 ### Results Screenshots
 
-![Report Index](https://imgur.com/a/Pl6HhVA)
+![Report Index](https://i.imgur.com/LCXpt6N.png)
 
-![Report Sample](https://imgur.com/a/5hZco1e)
+![Report Sample](https://i.imgur.com/TZlQbiV.png)
 
 ## Prerequisites
 
@@ -49,7 +49,7 @@ Once you done that, you need to execute a subprocess where you call EI.exe, indi
 ## Authors
 
 * **Guilherme Beco** - [GitHub](https://github.com/GuilhermeBeco)
-* **Tiago Garcia** - [GitHub]https://github.com/tiagohgarcia)
+* **Tiago Garcia** - [GitHub](https://github.com/tiagohgarcia)
 
 ## Mentors
 
