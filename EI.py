@@ -126,7 +126,7 @@ if __name__ == "__main__":
                                                 dictionaryConversationDetails, arrayCallOneToOne)
                             ProduceHTML.createhtmltables(pathMulti, user, arrayContactos, arrayEventCall,
                                                          arrayCallOneToOne,
-                                                         dictionaryConversationDetails)
+                                                         dictionaryConversationDetails,current_milli_time())
 
                             arrayContactos.clear()
                             dictFiles.clear()
@@ -187,4 +187,4 @@ if __name__ == "__main__":
                                 dictionaryConversationDetails, arrayCallOneToOne)
 
             ProduceHTML.createhtmltables(pathToAutopsy, user, arrayContactos, arrayEventCall, arrayCallOneToOne,
-                                         dictionaryConversationDetails)
+                                         dictionaryConversationDetails,current_milli_time())
