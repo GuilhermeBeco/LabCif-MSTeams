@@ -12,6 +12,7 @@ idM = 1
 arrayMensagens = []
 bufferBuffer = []
 arrayCallOneToOne = []
+tmCSV=""
 
 
 class File:
@@ -537,7 +538,7 @@ def filtro(buffer, arrayContactos, pathArmazenanto, user):
                     mensagem.sender = sender
                     mensagem.cvID = cvId
                     if arrayReacoes.__len__() > 0:
-                        with open(os.path.join(pathArmazenanto, 'Reacts_{}.csv'.format(user)), 'a+', newline='',
+                        with open(os.path.join(pathArmazenanto, 'Reacts_{}_{}.csv'.format(user,tmCSV)), 'a+', newline='',
                                   encoding="utf-8") as csvfile:
                             messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                             for r in arrayReacoes:
@@ -554,7 +555,7 @@ def filtro(buffer, arrayContactos, pathArmazenanto, user):
                     arrayReacoes.clear()
 
 
-def findpadrao(pathArmazenanto, arrayContactos, user):
+def findpadrao(pathArmazenanto, arrayContactos, user,tm):
     logFinalRead = open(os.path.join(pathArmazenanto, "logTotal.txt"), "r", encoding="utf-8")
     flagMgs = 0
     stringBuffer = ""
@@ -563,6 +564,8 @@ def findpadrao(pathArmazenanto, arrayContactos, user):
     buffer = []
     arrayReturn = {}
     ready = False
+    global tmCSV
+    tmCSV=tm
     while line := logFinalRead.readline():
         # print(ready)
         if flagMgs == 1:

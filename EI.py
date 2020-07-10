@@ -27,6 +27,7 @@ arrayUsers = []
 dictFiles = {}
 idM = 1
 pathModule = ""
+tmCSV = ""
 
 if __name__ == "__main__":
     args = sys.argv[1:]
@@ -96,8 +97,8 @@ if __name__ == "__main__":
                                 print("Creation of the directory %s failed" % pathMulti)
                             else:
                                 print("Successfully created the directory %s " % pathMulti)
-
-                            with open(os.path.join(pathMulti, 'Reacts_{}.csv'.format(user)), 'a+', newline='',
+                            tmCSV = current_milli_time()
+                            with open(os.path.join(pathMulti, 'Reacts_{}_{}.csv'.format(user, tmCSV)), 'a+', newline='',
                                       encoding="utf-8") as csvfile:
                                 fieldnames = ['messageID', 'reacted_with', 'reacted_by', 'react_time', 'user']
                                 messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|',
@@ -118,15 +119,15 @@ if __name__ == "__main__":
                             Calls.extrairEventCallsToFile(pathMulti)
                             arrayEventCall = Calls.criarObjetosDeEventCalls(pathMulti, arrayContactos)
 
-                            arrayReturn = Messages.findpadrao(pathMulti, arrayContactos, user)
+                            arrayReturn = Messages.findpadrao(pathMulti, arrayContactos, user, tmCSV)
                             arrayMensagens = arrayReturn["mensagem"]
                             arrayCallOneToOne = arrayReturn["callOneToOne"]
 
                             WriteCSV.writeFiles(user, pathMulti, arrayContactos, arrayMensagens, arrayEventCall,
-                                                dictionaryConversationDetails, arrayCallOneToOne)
+                                                dictionaryConversationDetails, arrayCallOneToOne, tmCSV)
                             ProduceHTML.createhtmltables(pathMulti, user, arrayContactos, arrayEventCall,
                                                          arrayCallOneToOne,
-                                                         dictionaryConversationDetails,current_milli_time())
+                                                         dictionaryConversationDetails, current_milli_time(), tmCSV)
 
                             arrayContactos.clear()
                             dictFiles.clear()
@@ -158,8 +159,8 @@ if __name__ == "__main__":
                 print("Creation of the directory %s failed" % pathToAutopsy)
             else:
                 print("Successfully created the directory %s " % pathToAutopsy)
-
-            with open(os.path.join(pathToAutopsy, 'Reacts_{}.csv'.format(user)), 'a+', newline='',
+            tmCSV = current_milli_time()
+            with open(os.path.join(pathToAutopsy, 'Reacts_{}_{}.csv'.format(user, tmCSV)), 'a+', newline='',
                       encoding="utf-8") as csvfile:
                 fieldnames = ['messageID', 'reacted_with', 'reacted_by', 'react_time', 'user']
                 messagewriter = csv.writer(csvfile, delimiter=';', quotechar='|',
@@ -179,12 +180,13 @@ if __name__ == "__main__":
             Calls.extrairEventCallsToFile(pathToAutopsy)
             arrayEventCall = Calls.criarObjetosDeEventCalls(pathToAutopsy, arrayContactos)
 
-            arrayReturn = Messages.findpadrao(pathToAutopsy, arrayContactos, user)
+            arrayReturn = Messages.findpadrao(pathToAutopsy, arrayContactos, user, tmCSV)
             arrayMensagens = arrayReturn["mensagem"]
             arrayCallOneToOne = arrayReturn["callOneToOne"]
 
             WriteCSV.writeFiles(user, pathToAutopsy, arrayContactos, arrayMensagens, arrayEventCall,
-                                dictionaryConversationDetails, arrayCallOneToOne)
+                                dictionaryConversationDetails, arrayCallOneToOne, tmCSV)
 
             ProduceHTML.createhtmltables(pathToAutopsy, user, arrayContactos, arrayEventCall, arrayCallOneToOne,
-                                         dictionaryConversationDetails,current_milli_time())
+                                         dictionaryConversationDetails, current_milli_time(), tmCSV)
+
