@@ -4,7 +4,7 @@ import pandas as pd
 
 
 def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCallOneToOne,
-                     dictionaryConversationDetails, tm):
+                     dictionaryConversationDetails, tm,tmCSV):
     css_string = '''
         .mystyle {
             font-size: 11pt; 
@@ -116,21 +116,21 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
         file.write(html_string.format(title="TEAMS FORMATION", table=frame_teams_formation.to_html(classes='mystyle')))
 
     # Create html table to present messages files
-    frame_files = pd.read_csv(os.path.join(pathToFolder, "Files_{}.csv".format(user)), delimiter=";", header=0,
+    frame_files = pd.read_csv(os.path.join(pathToFolder, "Files_{}_{}.csv".format(user,tmCSV)), delimiter=";", header=0,
                               names=["Message ID", "File name", "File link", 'User'])
     with open(os.path.join(pathToFolder, "User_Messages_Files_{}_{}.html".format(user, tm)), 'w',
               encoding="utf-8") as file:
         file.write(html_string.format(title="MESSAGES FILES", table=frame_files.to_html(classes='mystyle')))
 
     # Create html table to present messages reactions
-    frame_reacts = pd.read_csv(os.path.join(pathToFolder, "Reacts_{}.csv".format(user)), delimiter=";", header=0,
+    frame_reacts = pd.read_csv(os.path.join(pathToFolder, "Reacts_{}_{}.csv".format(user,tmCSV)), delimiter=";", header=0,
                                names=["Message ID", "Reaction", "Reacted by", 'Date'])
     with open(os.path.join(pathToFolder, "User_Messages_Reacts_{}_{}.html".format(user, tm)), 'w',
               encoding="utf-8") as file:
         file.write(html_string.format(title="MESSAGES REACTIONS", table=frame_reacts.to_html(classes='mystyle')))
 
     # Create html table to present messages
-    frame_messages = pd.read_csv(os.path.join(pathToFolder, "Mensagens_{}.csv".format(user)), delimiter=";", header=0,
+    frame_messages = pd.read_csv(os.path.join(pathToFolder, "Mensagens_{}_{}.csv".format(user,tmCSV)), delimiter=";", header=0,
                                  names=["Message ID", "Message", "Date", 'Sender', 'Conversation ID', 'User'],
                                  encoding="utf-8")
     with open(os.path.join(pathToFolder, "User_Messages_{}_{}.html".format(user, tm)), 'w', encoding="utf-8") as file:
