@@ -311,6 +311,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                     }
 
             '''
+
     with open(os.path.join(pathToFolder, "style.css"), 'w') as f:
         f.write(css_string)
 
