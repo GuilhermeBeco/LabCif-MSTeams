@@ -319,4 +319,4 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
     source_code = html.read()
     tables = pd.read_html(source_code)
     for i, table in enumerate(tables):
-        table.to_csv(os.path.join(pathToFolder, 'messages_from_html_{}.csv'.format(user)), ';')
+        table.to_csv(os.path.join(pathToFolder, 'messages_from_html_{}_{}.csv'.format(user,tm)), ';')
