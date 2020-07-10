@@ -4,7 +4,18 @@ from datetime import datetime
 import re
 import Contacts
 
-from models import ConversationCreationDetails
+
+class ConversationCreationDetails:
+    def __init__(self, conversation_id, date, creator, members):
+        self.conversation_id = conversation_id
+        self.date = date
+        self.creator = creator
+        self.members = members
+
+    def toString(self):
+        return "CONVERSATION: {0} ||| DATE: {1} ||| CREATOR: {2} ||| MEMBERS: {3}".format(self.conversation_id,
+                                                                                          self.date, self.creator,
+                                                                                          self.members)
 
 
 def criacaoDeEquipas(pathArmazenamento):
