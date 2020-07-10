@@ -4,8 +4,7 @@ import pandas as pd
 
 
 def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCallOneToOne,
-                     dictionaryConversationDetails):
-
+                     dictionaryConversationDetails, tm):
     css_string = '''
         .mystyle {
             font-size: 11pt; 
@@ -66,7 +65,10 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
         iterator = iterator + 1
 
     frame_contacts = pd.DataFrame.from_dict(sorted_by_name_contacts, orient='index', columns=['Name', 'Email', 'User'])
-    with open(os.path.join(pathToFolder, "User_Contacts_{}.html".format(user)), 'w', encoding="utf-8") as file:
+
+    with open(os.path.join(pathToFolder, "User_Contacts_{}_{}.html".format(user, tm)), 'w', encoding="utf-8") as file:
+
+   
         file.write(html_string.format(title="CONTACTS", table=frame_contacts.to_html(classes='mystyle')))
 
     # Create html table to present Calls in Teams
@@ -80,7 +82,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
 
     frame_team_calls = pd.DataFrame(teams_calls, columns=["End date", "Duration (minutes)", "Number of participants",
                                                           "Call Creator", "Call Participants", "user"])
-    with open(os.path.join(pathToFolder, "Calls_Teams_{}.html".format(user)), 'w', encoding="utf-8") as file:
+    with open(os.path.join(pathToFolder, "Calls_Teams_{}_{}.html".format(user, tm)), 'w', encoding="utf-8") as file:
         file.write(html_string.format(title="TEAM CALLS", table=frame_team_calls.to_html(classes='mystyle')))
 
     # Create html table to present Calls in private conversations
@@ -95,7 +97,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
     frame_private_calls = pd.DataFrame(private_calls, columns=["Date Start Call", "Date End Call", "Call Creator Name",
                                                                "Call Creator Email", "Call Participant Name",
                                                                "Call Participant Email", "User"])
-    with open(os.path.join(pathToFolder, "Calls_Private_Conversations_{}.html".format(user)), 'w',
+    with open(os.path.join(pathToFolder, "Calls_Private_Conversations_{}_{}.html".format(user, tm)), 'w',
               encoding="utf-8") as file:
         file.write(html_string.format(title="PRIVATE CALLS", table=frame_private_calls.to_html(classes='mystyle')))
 
@@ -113,26 +115,28 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                                                   "Email of User who added member", "Member Name", "Member Email",
                                                   "User"])
 
-    with open(os.path.join(pathToFolder, "Teams_Formation_{}.html".format(user)), 'w', encoding="utf-8") as file:
+    with open(os.path.join(pathToFolder, "Teams_Formation_{}_{}.html".format(user, tm)), 'w', encoding="utf-8") as file:
         file.write(html_string.format(title="TEAMS FORMATION", table=frame_teams_formation.to_html(classes='mystyle')))
 
     # Create html table to present messages files
     frame_files = pd.read_csv(os.path.join(pathToFolder, "Files_{}.csv".format(user)), delimiter=";", header=0,
                               names=["Message ID", "File name", "File link", 'User'])
-    with open(os.path.join(pathToFolder, "User_Messages_Files_{}.html".format(user)), 'w', encoding="utf-8") as file:
+    with open(os.path.join(pathToFolder, "User_Messages_Files_{}_{}.html".format(user, tm)), 'w',
+              encoding="utf-8") as file:
         file.write(html_string.format(title="MESSAGES FILES", table=frame_files.to_html(classes='mystyle')))
 
     # Create html table to present messages reactions
     frame_reacts = pd.read_csv(os.path.join(pathToFolder, "Reacts_{}.csv".format(user)), delimiter=";", header=0,
                                names=["Message ID", "Reaction", "Reacted by", 'Date'])
-    with open(os.path.join(pathToFolder, "User_Messages_Reacts_{}.html".format(user)), 'w', encoding="utf-8") as file:
+    with open(os.path.join(pathToFolder, "User_Messages_Reacts_{}_{}.html".format(user, tm)), 'w',
+              encoding="utf-8") as file:
         file.write(html_string.format(title="MESSAGES REACTIONS", table=frame_reacts.to_html(classes='mystyle')))
 
     # Create html table to present messages
     frame_messages = pd.read_csv(os.path.join(pathToFolder, "Mensagens_{}.csv".format(user)), delimiter=";", header=0,
                                  names=["Message ID", "Message", "Date", 'Sender', 'Conversation ID', 'User'],
                                  encoding="utf-8")
-    with open(os.path.join(pathToFolder, "User_Messages_{}.html".format(user)), 'w', encoding="utf-8") as file:
+    with open(os.path.join(pathToFolder, "User_Messages_{}_{}.html".format(user, tm)), 'w', encoding="utf-8") as file:
         file.write(html_string.format(title="MESSAGES", table=frame_messages.to_html(classes='mystyle')))
 
     # generate index html page
@@ -149,7 +153,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                     <h1 style="text-align: center; padding: 10% 0;">User: {user}</h1>
                     <ul>
                         <li>
-                            <a href="User_Contacts_{user}.html">
+                            <a href="User_Contacts_{user}_{tm}.html">
                                 <div class="icon">
                                     <i class="fa fa-address-book"></i>
                                     <i class="fa fa-address-book"></i>
@@ -159,7 +163,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                             </a>
                         </li>
                         <li>
-                            <a href="User_Messages_{user}.html">
+                            <a href="User_Messages_{user}_{tm}.html">
                                 <div class="icon">
                                     <i class="fa fa-envelope"></i>
                                     <i class="fa fa-envelope"></i>
@@ -169,7 +173,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                             </a>
                         </li>
                         <li>
-                            <a href="User_Messages_Files_{user}.html">
+                            <a href="User_Messages_Files_{user}_{tm}.html">
                                 <div class="icon">
                                     <i class="fa fa-file"></i>
                                     <i class="fa fa-file"></i>
@@ -179,7 +183,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                             </a>
                         </li>
                         <li>
-                            <a href="User_Messages_Reacts_{user}.html">
+                            <a href="User_Messages_Reacts_{user}_{tm}.html">
                                 <div class="icon">
                                     <i class="fa fa-thumbs-up"></i>
                                     <i class="fa fa-thumbs-up"></i>
@@ -189,7 +193,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                             </a>
                         </li>
                         <li>
-                            <a href="Calls_Private_Conversations_{user}.html">
+                            <a href="Calls_Private_Conversations_{user}_{tm}.html">
                                 <div class="icon">
                                     <i class="fa fa-phone"></i>
                                     <i class="fa fa-phone"></i>
@@ -199,7 +203,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                             </a>
                         </li>
                         <li>
-                            <a href="Teams_Formation_{user}.html">
+                            <a href="Teams_Formation_{user}_{tm}.html">
                                 <div class="icon">
                                     <i class="fa fa-users"></i>
                                     <i class="fa fa-users"></i>
@@ -209,7 +213,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                             </a>
                         </li>
                         <li>
-                            <a href="Calls_Teams_{user}.html">
+                            <a href="Calls_Teams_{user}_{tm}.html">
                                 <div class="icon">
                                     <i class="fa fa-phone"></i>
                                     <i class="fa fa-phone"></i>
@@ -222,7 +226,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                 </body>
             </html>
             '''
-    with open(os.path.join(pathToFolder, "index_{}.html".format(user)), 'w', encoding="utf-8") as file:
+    with open(os.path.join(pathToFolder, "index_{}_{}.html".format(user, tm)), 'w', encoding="utf-8") as file:
         file.write(html_string_index.format(contacts_number=str(frame_contacts.__len__()),
                                             messages_number=str(frame_messages.__len__()),
                                             messages_files_number=str(frame_files.__len__()),
@@ -230,7 +234,7 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                                             private_calls_number=str(frame_private_calls.__len__()),
                                             teams_formation_number=str(frame_teams_formation.__len__()),
                                             team_calls_number=str(frame_team_calls.__len__()),
-                                            user=user))
+                                            user=user,tm=tm))
 
     css_string = '''
                     body 
@@ -310,11 +314,12 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
                     }
 
             '''
+
     with open(os.path.join(pathToFolder, "style.css"), 'w') as f:
         f.write(css_string)
 
-    html = open(os.path.join(pathToFolder, "User_Messages_{}.html".format(user)), 'r', encoding="utf-8")
+    html = open(os.path.join(pathToFolder, "User_Messages_{}_{}.html".format(user, tm)), 'r', encoding="utf-8")
     source_code = html.read()
     tables = pd.read_html(source_code)
     for i, table in enumerate(tables):
-        table.to_csv(os.path.join(pathToFolder, 'messages_from_html_{}.csv'.format(user)), ';')
+        table.to_csv(os.path.join(pathToFolder, 'messages_from_html_{}_{}.csv'.format(user,tm)), ';')
