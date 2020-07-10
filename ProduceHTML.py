@@ -65,7 +65,10 @@ def createhtmltables(pathToFolder, user, arrayContactos, arrayEventCall, arrayCa
         iterator = iterator + 1
 
     frame_contacts = pd.DataFrame.from_dict(sorted_by_name_contacts, orient='index', columns=['Name', 'Email', 'User'])
+
     with open(os.path.join(pathToFolder, "User_Contacts_{}_{}.html".format(user, tm)), 'w', encoding="utf-8") as file:
+
+   
         file.write(html_string.format(title="CONTACTS", table=frame_contacts.to_html(classes='mystyle')))
 
     # Create html table to present Calls in Teams
