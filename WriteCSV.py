@@ -10,7 +10,7 @@ def writeFiles(user, pathArmazenamento, arrayContactos, arrayMensagens, arrayEve
     dictFiles = {}
     with open(os.path.join(pathArmazenamento, 'Contactos_{}_{}.csv'.format(user, tmCSV)), 'a+', newline='',
               encoding="utf-8") as csvfile:
-        fieldnames = ['nome', 'email', 'orgid','user']
+        fieldnames = ['nome', 'email', 'orgid', 'user']
         messagewriter = csv.writer(csvfile, delimiter=';',
                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
         messagewriter.writerow(fieldnames)
